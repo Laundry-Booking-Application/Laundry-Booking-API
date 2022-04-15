@@ -7,12 +7,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start-dev": "cross-env NODE_ENV=development && node node_modules/nodemon/bin/nodemon.js src/server",
     "start": "cross-env NODE_ENV=production && node node_modules/nodemon/bin/nodemon.js src/server",
-	  "escheck": "cross-env NODE_ENV=development && node node_modules/eslint/bin/eslint -c .eslintrc.json --ignore-path .gitignore .",
-	  "esfix": "cross-env NODE_ENV=development && node node_modules/eslint/bin/eslint -c .eslintrc.json --ignore-path .gitignore --fix ."
+    "escheck": "cross-env NODE_ENV=development && node node_modules/eslint/bin/eslint -c .eslintrc.json --ignore-path .gitignore .",
+    "esfix": "cross-env NODE_ENV=development && node node_modules/eslint/bin/eslint -c .eslintrc.json --ignore-path .gitignore --fix ."
   },
   "author": "",
   "license": "GPL-3.0",
   "dependencies": {
+    "bcrypt": "^5.0.1",
     "body-parser": "^1.19.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -22,7 +23,6 @@
     "express-validator": "^6.14.0",
     "jsonwebtoken": "^8.5.1",
     "nodemon": "^2.0.15",
-    "pbkdf2": "^3.1.2",
     "pg": "^8.7.3",
     "swedish-personal-identity-number-validator": "^2.1.1",
     "validator": "^13.7.0",
