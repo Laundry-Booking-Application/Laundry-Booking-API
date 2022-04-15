@@ -1,4 +1,5 @@
 'use strict';
+const UserApi = require('./UserApi');
 
 /**
  * Loads all the request handlers
@@ -56,6 +57,7 @@ class RequestHandlerLoader {
 }
 
 const reqHandlerloader = new RequestHandlerLoader();
+reqHandlerloader.addRequestHandler(new UserApi());
 
 
 module.exports = reqHandlerloader;

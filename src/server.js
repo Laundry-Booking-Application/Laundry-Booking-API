@@ -44,7 +44,7 @@ app.get('/', (req, res, next) => {
     }
 });
 
-const reqHandlerLoader = require('./api');
+const reqHandlerLoader = require('./view/api');
 reqHandlerLoader.loadHandlers(app);
 reqHandlerLoader.loadErrorHandlers(app);
 
