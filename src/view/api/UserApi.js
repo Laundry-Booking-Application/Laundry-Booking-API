@@ -4,7 +4,7 @@ const { check, validationResult } = require('express-validator');
 const RequestHandler = require('./RequestHandler');
 // const Validators = require('../../util/Validators');
 const userStatusCodes = require('../../util/userStatusCodes');
-// const Authorization = require('./auth/Authorization');
+const Authorization = require('./auth/Authorization');
 
 /**
  * Handles the REST API requests for the user endpoint.
@@ -62,21 +62,21 @@ class UserApi extends RequestHandler {
                     try {
                         const errors = validationResult(req);
                         if (!errors.isEmpty()) {
-                            // Authorization.clearAuthCookie(res);
+                            Authorization.clearAuthCookie(res);
                             this.sendHttpResponse(res, 400, errors);
                             return;
                         }
                         const loggedInUserDTO = await this.controller.loginUser(req.body.username, req.body.password);
 
                         if (loggedInUserDTO === null) {
-                            // Authorization.clearAuthCookie(res);
+                            Authorization.clearAuthCookie(res);
                             throw new Error('Expected UserDTO object, received null.');
                         } else if (loggedInUserDTO.statusCode !== userStatusCodes.OK) {
-                            // Authorization.clearAuthCookie(res);
+                            Authorization.clearAuthCookie(res);
                             this.sendHttpResponse(res, 401, 'User login failed.');
                             return;
                         } else {
-                            // Authorization.setAuthCookie(loggedInUserDTO, res);
+                            Authorization.setAuthCookie(loggedInUserDTO, res);
                             this.sendHttpResponse(res, 200, loggedInUserDTO);
                             return;
                         }
@@ -125,8 +125,7 @@ class UserApi extends RequestHandler {
                             this.sendHttpResponse(res, 400, errors);
                             return;
                         }
-                        // const loggedInUserDTO = await Authorization.verifyAdminAuthorization(req);
-                        const loggedInUserDTO = {'username': 'test'};
+                        const loggedInUserDTO = await Authorization.verifyAdminAuthorization(req);
                         if (loggedInUserDTO === null) {
                             this.sendHttpResponse(res, 401, 'Missing or invalid authorization cookie.');
                             return;
@@ -142,13 +141,57 @@ class UserApi extends RequestHandler {
                                 } else if (registeredUserDTO.statusCode === userStatusCodes.ExistentUsername) {
                                     this.sendHttpResponse(res, 400, 'Username already exists.');
                                 } else {
-                                    this.sendHttpResponse(res, 400, 'Resident user signup failed.');
+                                    this.sendHttpResponse(res, 400, 'Resident user registration failed.');
                                 }
                             } else {
                                 this.sendHttpResponse(res, 200, registeredUserDTO);
                                 return;
                             }
                         }
+                    } catch (err) {
+                        next(err);
+                    }
+                },
+            );
+
+            /**
+             * Checks whether a user is logged in or not, by verifying the authentication cookie.
+             *
+             * Sends   200: If the request contained a valid authentication cookie, the response body
+             *              contains the logged in user info.
+             *         401: If the authentication cookie was missing or invalid.
+             */
+            this.router.get(
+                '/checkLogin',
+                async (req, res, next) => {
+                    try {
+                        const userDTO = await Authorization.verifyAuthCookie(req, res);
+                        if (userDTO === null) {
+                            Authorization.clearAuthCookie(res);
+                            this.sendHttpResponse(res, 401, 'Missing or invalid authorization cookie.');
+                            return;
+                        } else {
+                            this.sendHttpResponse(res, 200, userDTO);
+                            return;
+                        }
+                    } catch (err) {
+                        next(err);
+                    }
+                },
+            );
+
+            /**
+             * Logs out a user by clearing the authentication cookie.
+             *
+             * Sends   200: If the authentication cookie was successfully cleared.
+             */
+            this.router.get(
+                '/logout',
+                async (req, res, next) => {
+                    try {
+                        Authorization.clearAuthCookie(res);
+                        this.sendHttpResponse(res, 200, 'Logged out successfully.');
+                        return;
                     } catch (err) {
                         next(err);
                     }

@@ -32,7 +32,7 @@ class LaundryDAO {
             connectionTimeoutMillis: 5000,
             statement_timeout: 2000,
             query_timeout: 2000,
-            // ssl: {rejectUnauthorized: false},
+            ssl: {rejectUnauthorized: false},
         });
 
         this.logger = new Logger('LaundryDatabaseHandler');
