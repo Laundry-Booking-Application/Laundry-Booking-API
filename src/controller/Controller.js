@@ -26,7 +26,7 @@ class Controller {
      */
     static async createController() {
         const controller = new Controller();
-        // await controller.laundryDAO.establishConnection();
+        await controller.laundryDAO.establishConnection();
 
         return controller;
     }
@@ -42,8 +42,7 @@ class Controller {
      *                          while contacting the database.
      */
     async loginUser(username, password) {
-        // const userDTO = await this.LaundryDAO.loginUser(username, password);
-        const userDTO = new UserDTO("testUser", 0, 0);
+        const userDTO = await this.laundryDAO.loginUser(username, password);
         return userDTO;
     }
 
@@ -67,8 +66,7 @@ class Controller {
      */
     async registerResident(issuerUsername, firstName, lastName, personalNumber, email, username, password) {
         const registerDTO = new RegisterDTO(firstName, lastName, personalNumber, email, username, password);
-        // const userDTO = await this.LaundryDAO.registerNewResident(issuerUsername, registerDTO);
-        const userDTO = new UserDTO("testRegisteredUser", 0, 0);
+        const userDTO = await this.laundryDAO.registerNewResident(issuerUsername, registerDTO);
         return userDTO;
     }
 
