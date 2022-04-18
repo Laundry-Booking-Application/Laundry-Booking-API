@@ -1,5 +1,7 @@
 'use strict';
 const UserApi = require('./UserApi');
+const UserErrorHandler = require('./error/UserErrorHandler');
+const GeneralErrorHandler = require('./error/GeneralErrorHandler');
 
 /**
  * Loads all the request handlers
@@ -56,9 +58,10 @@ class RequestHandlerLoader {
     }
 }
 
-const reqHandlerloader = new RequestHandlerLoader();
-reqHandlerloader.addRequestHandler(new UserApi());
+const requestHandlerLoader = new RequestHandlerLoader();
+requestHandlerLoader.addRequestHandler(new UserApi());
+requestHandlerLoader.addErrorHandler(new UserErrorHandler());
+requestHandlerLoader.addErrorHandler(new GeneralErrorHandler());
 
-
-module.exports = reqHandlerloader;
+module.exports = requestHandlerLoader;
 

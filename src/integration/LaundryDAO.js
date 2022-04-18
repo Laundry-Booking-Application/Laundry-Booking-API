@@ -198,7 +198,7 @@ class LaundryDAO {
 
     /**
      * Get the list of users with their information. Note that only high privilege user can do list users. 
-     * @param {string} username The username of the related user initiated the listing.
+     * @param {string} username The username of the related user that initiated the request.
      * @returns {UserInfoDTO | null} An array of objects that hold all the information about the results.
      *                              null indicates that something went wrong and it gets logged.
      */         
@@ -246,7 +246,7 @@ class LaundryDAO {
     }
 
     /**
-     * Delete all the information about the specified user.
+     * Deletes all information about the specified user and removes the user from the system.
      * @param {string} username The username of the related user initiated the deleting process.
      * @param {string} userToBeRemoved The username of the user that it will be removed.
      * @returns {boolean | null} true or false to give a confirmation of the deletion in case nothing wrong happens.
