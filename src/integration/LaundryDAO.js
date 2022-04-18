@@ -5,8 +5,10 @@ const bcrypt = require('bcrypt');
 const Logger = require('../util/Logger');
 const UserDTO = require('../model/UserDTO');
 const RegisterDTO = require('../model/RegisterDTO');
+const UserInfoDTO = require('../model/UserInfoDTO');
 const privilegeEnum = require('../util/privilegeEnum');
 const userStatusCodes = require('../util/userStatusCodes');
+const userInfoStatusCodes = require('../util/userInfoStatusCodes');
 const PersonInfo = require('./PersonInfo');
 
 /**
@@ -30,8 +32,8 @@ class LaundryDAO {
             password: process.env.DB_PASS,
             port: process.env.DB_PORT,
             connectionTimeoutMillis: 5000,
-            statement_timeout: 2000,
-            query_timeout: 2000,
+            statement_timeout: 4000,
+            query_timeout: 4000,
             ssl: {rejectUnauthorized: false},
         });
 
@@ -194,6 +196,112 @@ class LaundryDAO {
         }
     }
 
+    /**
+     * Get the list of users with their information. Note that only high privilege user can do list users. 
+     * @param {string} username The username of the related user initiated the listing.
+     * @returns {UserInfoDTO | null} An array of objects that hold all the information about the results.
+     *                              null indicates that something went wrong and it gets logged.
+     */         
+    async listUsers(username) {
+        try {
+            const personInfo = await this._getPersonInfo(username);
+
+            if (personInfo === null) {
+                return new UserInfoDTO([], userInfoStatusCodes.InvalidUser);
+            }
+
+            if (personInfo.privilegeID !== privilegeEnum.Administrator) {
+                return new UserInfoDTO([], userInfoStatusCodes.InvalidPrivilege);
+            }
+
+            const getUsersQuery = {
+                text: `SELECT  person.firstname, person.lastname,
+                person.personal_number, account.username
+                FROM        account
+                INNER JOIN person ON (person.id = account.person_id)
+                WHERE    person.privilege_id = $1`,
+                values: [privilegeEnum.Standard],
+            };
+
+            await this._executeQuery('BEGIN');
+
+            let retValue;
+            let userInfoList = [];
+            const results = await this._executeQuery(getUsersQuery);
+
+            for (let i = 0; i < results.rowCount; i++) {
+                userInfoList[i] = {firstName: results.rows[i].firstname, lastName: results.rows[i].lastname, 
+                                personalNumber: results.rows[i].personal_number, username: results.rows[i].username}
+            }
+
+            retValue = new UserInfoDTO([...userInfoList], userInfoStatusCodes.OK);
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+
+    /**
+     * Delete all the information about the specified user.
+     * @param {string} username The username of the related user initiated the deleting process.
+     * @param {string} userToBeRemoved The username of the user that it will be removed.
+     * @returns {boolean | null} true or false to give a confirmation of the deletion in case nothing wrong happens.
+     *                           null indicates that something went wrong and it gets logged.
+     */
+    async deleteUser(username, userToBeRemoved) {
+        try {
+            const adminInfo = await this._getPersonInfo(username);
+            const userInfo = await this._getPersonInfo(userToBeRemoved);
+
+            if (adminInfo === null) {
+                return false;
+            }
+
+            if (adminInfo.privilegeID !== privilegeEnum.Administrator) {
+                return false;
+            }
+
+            if (userInfo === null) {
+                return false;
+            }
+
+            const deleteBookingQuery = {
+                text: `DELETE FROM public.pass_booking
+                WHERE account_id = $1`,
+                values: [userInfo.accountID],
+            };
+
+            const deleteAccountQuery = {
+                text: `DELETE FROM public.account
+                WHERE id = $1`,
+                values: [userInfo.accountID],
+            };
+
+            const deletePersonQuery = {
+                text: `DELETE FROM public.person
+                WHERE id = $1`,
+                values: [userInfo.personID],
+            };
+
+            await this._executeQuery('BEGIN');
+
+            await this._executeQuery(deleteBookingQuery)
+            await this._executeQuery(deleteAccountQuery)
+            await this._executeQuery(deletePersonQuery)
+            
+            await this._executeQuery('COMMIT');
+
+            return true;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+    
     // eslint-disable-next-line require-jsdoc
     async _getPersonInfo(username) {
         const getInfoQuery = {
