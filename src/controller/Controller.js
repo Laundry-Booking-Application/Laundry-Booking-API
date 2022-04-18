@@ -49,11 +49,11 @@ class Controller {
     /**
      * Registers a resident account. 
      * This method issues a call to the registerNewResident method in the {LaundryDAO},
-     * which either returns a {UserDTO} with the result of the authentication or null in case of an error
+     * which either returns a {UserDTO} with the result of the registration or null in case of an error
      * while contacting the database.
      *
      * @param {String} issuerUsername The username of the user that issued the request.
-     *                                The user that issued the request should be an administrator.
+     *                                The user that issued the request must be an administrator.
      * @param {String} firstName The first name of the new resident account owner.
      * @param {String} lastName The last name of the new resident account owner.
      * @param {String} personalNumber The personal number of the new resident account.
@@ -68,6 +68,39 @@ class Controller {
         const registerDTO = new RegisterDTO(firstName, lastName, personalNumber, email, username, password);
         const userDTO = await this.laundryDAO.registerNewResident(issuerUsername, registerDTO);
         return userDTO;
+    }
+
+    /**
+    * Lists all registered resident users. 
+    * This method issues a call to the listUsers method in the {LaundryDAO},
+    * which either returns a {UserInfoDTO} or null in case of an error
+    * while contacting the database.
+    *
+    * @param {String} issuerUsername The username of the user that issued the request.
+    *                                The user that issued the request must be an administrator.
+    * @return {UserInfoDTO | null} The registered residents UserInfoDTO or null in case of an error
+    *                          while contacting the database.
+    */
+    async listUsers(issuerUsername) {
+        const userInfoDTO = await this.laundryDAO.listUsers(issuerUsername);
+        return userInfoDTO;
+    }
+
+    /**
+    * Deletes all information about the specified user and removes the user from the system.
+    * This method issues a call to the deleteUser method in the {LaundryDAO},
+    * which either returns true in case of success or false in case of an error 
+    * while processing the operation, or null if an error occurs while contacting the database.
+    *
+    * @param {String} issuerUsername The username of the user that issued the request.
+    *                                The user that issued the request must be an administrator.
+    * @param {String} userToBeRemoved The username of the user that is to be removed from the system.
+    * @return {boolean | null} The deletion operation result, true in case of success, false in case of failure
+    *                          or null in case of an error while contacting the database.                     
+    */
+    async deleteUser(issuerUsername, userToBeRemoved) {
+        const result = await this.laundryDAO.deleteUser(issuerUsername, userToBeRemoved);
+        return result;
     }
 
 

@@ -39,7 +39,7 @@ class UserApi extends RequestHandler {
             await this.fetchController();
 
             /**
-             * Login a user. Handles requests to the login endpoint.
+             * Attempts to login a user.
              * The username and password received in the request are validated.
              * Errors caused by database related issues, are handled by the
              * {UserErrorHandler}.
@@ -87,8 +87,9 @@ class UserApi extends RequestHandler {
             );
 
             /**
-             * Register a resident account. Handles requests to the registerResident endpoint.
+             * Registers a resident account.
              * All the fields received in the request are validated.
+             * This endpoint is only accessible by Administrators.
              * Errors caused by database related issues, are handled by the
              * {UserErrorHandler}.
              *
@@ -145,6 +146,82 @@ class UserApi extends RequestHandler {
                                 }
                             } else {
                                 this.sendHttpResponse(res, 200, registeredUserDTO);
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        next(err);
+                    }
+                },
+            );
+
+            /**
+             * Lists all registered resident account information.
+             * This endpoint is only accessible by Administrators.
+             * Errors caused by database related issues, are handled by the
+             * {UserErrorHandler}.
+             *
+             * Sends   200: If the request contained a valid authentication cookie, the response body
+             *              contains all registered resident account information.
+             *         401: If the authentication cookie was missing or invalid.
+             */
+            this.router.get(
+                '/listUsers',
+                async (req, res, next) => {
+                    try {
+                        const loggedInUserDTO = await Authorization.verifyAdminAuthorization(req);
+                        if (loggedInUserDTO === null) {
+                            this.sendHttpResponse(res, 401, 'Missing or invalid authorization cookie.');
+                            return;
+                        } else {
+                            const userInfoDTO = await this.controller.listUsers(loggedInUserDTO.username);
+                            if (userInfoDTO === null) {
+                                throw new Error('Expected UserInfoDTO object, received null.');
+                            }
+                            else {
+                                this.sendHttpResponse(res, 200, userInfoDTO);
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        next(err);
+                    }
+                },
+            );
+
+            /**
+             * Deletes all information about the specified user and removes the user from the system.
+             * This endpoint is only accessible by Administrators.
+             * Errors caused by database related issues, are handled by the
+             * {UserErrorHandler}.
+             *
+             * Sends   200: If the request contained a valid authentication cookie, the response body
+             *              contains the deletion operation result.
+             *         400: If the request body did not contain properly formatted fields.
+             *         401: If the authentication cookie was missing or invalid.
+             */
+            this.router.post(
+                '/deleteUser',
+                check('username').isAlpha(),
+                async (req, res, next) => {
+                    try {
+                        const errors = validationResult(req);
+                        if (!errors.isEmpty()) {
+                            this.sendHttpResponse(res, 400, errors);
+                            return;
+                        }
+                        const loggedInUserDTO = await Authorization.verifyAdminAuthorization(req);
+                        if (loggedInUserDTO === null) {
+                            this.sendHttpResponse(res, 401, 'Missing or invalid authorization cookie.');
+                            return;
+                        } else {
+                            const result = await this.controller.deleteUser(loggedInUserDTO.username, req.body.username);
+                            if (result === null) {
+                                throw new Error('Expected operation result boolean, received null.');
+                            }
+                            else {
+                                const resultObject = { 'result': result }
+                                this.sendHttpResponse(res, 200, resultObject);
                                 return;
                             }
                         }
