@@ -428,6 +428,35 @@ class LaundryDAO {
         }
     }
 
+	// eslint-disable-next-line require-jsdoc
+    async _getLockOwner(date, passScheduleID) {
+        const checkLockedPassQuery = {
+            text: `SELECT        pass_lock.account_id AS account_id
+            FROM    pass_lock
+            WHERE   pass_lock.pass_date = $1 AND
+                    pass_lock.pass_schedule_id = $2 AND
+                    (NOW() - pass_lock.lock_start) <= ($3 * 60) * INTERVAL '1' second`,
+            values: [date, passScheduleID, this.lockDuration],
+        };
+
+        try {
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(checkLockedPassQuery);
+
+            let retValue = -1;
+            if (results.rowCount > 0) {
+                retValue = results.rows[0].account_id;
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            throw err;
+        }
+    }
+
     /**
      * Unlock the temporarily locked pass slot that the user had.
      * @param {string} username The username that related to the user.
