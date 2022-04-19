@@ -370,6 +370,36 @@ class LaundryDAO {
         }
     }
 
+
+    // eslint-disable-next-line require-jsdoc
+    async _getPassInfo(roomNumber, passRange) {
+        const getPassScheduleQuery = {
+            text: `SELECT    pass_schedule.id AS pass_schedule_id
+            FROM        pass_schedule
+                        INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
+            WHERE    pass_schedule.room = $1 AND
+            pass.range = $2`,
+            values: [roomNumber, passRange],
+        };
+
+        try {
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(getPassScheduleQuery);
+
+            let retValue = -1;
+            if (results.rowCount > 0) {
+                retValue = results.rows[0].pass_schedule_id;
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            throw err;
+        }
+    }
+    
     // eslint-disable-next-line require-jsdoc
     async _getBookedPassID(date, passScheduleID) {
         const checkBookedPassQuery = {
