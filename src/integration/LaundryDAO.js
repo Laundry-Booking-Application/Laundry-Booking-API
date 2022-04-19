@@ -2,6 +2,8 @@
 
 const {Client, types} = require('pg');
 const bcrypt = require('bcrypt');
+let dayjs = require('dayjs');
+let weekOfYear = require('dayjs/plugin/weekOfYear');
 const Logger = require('../util/Logger');
 const UserDTO = require('../model/UserDTO');
 const RegisterDTO = require('../model/RegisterDTO');
@@ -38,6 +40,9 @@ class LaundryDAO {
         });
 
         this.logger = new Logger('LaundryDatabaseHandler');
+		
+		this.activePassesAllowed = 1;
+		this.lockDuration = 5; // Minutes
     }
 
     /**
@@ -249,7 +254,7 @@ class LaundryDAO {
      * Deletes all information about the specified user and removes the user from the system.
      * @param {string} username The username of the related user initiated the deleting process.
      * @param {string} userToBeRemoved The username of the user that it will be removed.
-     * @returns {boolean | null} true or false to give a confirmation of the deletion in case nothing wrong happens.
+     * @returns {boolean | null} true or false to give a confirmation of the deletion.
      *                           null indicates that something went wrong and it gets logged.
      */
     async deleteUser(username, userToBeRemoved) {
@@ -295,6 +300,189 @@ class LaundryDAO {
             
             await this._executeQuery('COMMIT');
 
+            return true;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+	
+	/**
+     * Lock the pass slot temporarily for an amount of time to allow the user to confirm their choice.
+     * @param {string} username The username that is related to the user.
+     * @param {int} roomNumber The number related to the room chosen.
+     * @param {string} date The date that the pass is going to be.
+     * @param {string} passRange The time frame that the pass have.
+     * @returns {boolean | null} true or false to give a confirmation of the locking.
+     *                           null indicates that something went wrong and it gets logged.
+     */
+    async lockPass(username, roomNumber, date, passRange) {
+        try {
+            const personInfo = await this._getPersonInfo(username);
+            const passScheduleID = await this._getPassInfo(roomNumber, passRange);
+
+            if (personInfo === null) {
+                return false;
+            }
+
+            if (passScheduleID === -1) {
+                return false;
+            }
+
+            const bookedPassID = await this._getBookedPassID(date, passScheduleID);
+            const lockOwnerID = await this._getLockOwner(date, passScheduleID);
+            const activePassesCount = await this._getActivePasses(personInfo.accountID);
+
+            if (bookedPassID !== -1) {
+                return false;
+            }
+
+            if (lockOwnerID !== personInfo.accountID && lockOwnerID !== -1) {
+                return false;
+            }
+
+            if (lockOwnerID === personInfo.accountID) {
+                return false;
+            }
+
+            if (activePassesCount >= this.activePassesAllowed) {
+                return false;
+            }
+
+            const addLockQuery = {
+                text: `INSERT INTO public.pass_lock(lock_start, pass_date, account_id, pass_schedule_id)
+                VALUES (NOW(), $1, $2, $3)`,
+                values: [date, personInfo.accountID ,passScheduleID],
+            };
+
+            await this.unlockPass(username);
+
+            await this._executeQuery('BEGIN');
+            
+            await this._executeQuery(addLockQuery);
+
+            await this._executeQuery('COMMIT');
+
+            return true;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _getBookedPassID(date, passScheduleID) {
+        const checkBookedPassQuery = {
+            text: `SELECT       pass_booking.id AS pass_booking_id
+            FROM    pass_booking
+            WHERE   pass_booking.date = $1 AND
+                    pass_booking.pass_schedule_id = $2`,
+            values: [date, passScheduleID],
+        };
+
+        try {
+            await this._executeQuery('BEGIN');
+
+            const result = await this._executeQuery(checkBookedPassQuery);
+
+            let retValue = -1;
+
+            if (result.rowCount > 0) {
+                retValue = result.rows[0].pass_booking_id;
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _getActivePasses(accountID) {
+        try {
+            const checkActivePassesQuery = {
+                text: `SELECT        COUNT(pass_booking.id) AS booking_count
+                FROM        pass_booking
+                WHERE       pass_booking.account_id = $1 AND
+                            pass_booking.date >= CURRENT_DATE
+                GROUP BY    pass_booking.id`,
+                values: [accountID]
+            };
+
+            let retValue = -1;
+            await this._executeQuery('BEGIN');
+            
+            const result = await this._executeQuery(checkActivePassesQuery);
+            
+            if (result.rowCount > 0) {
+                retValue = result.rows[0].booking_count;
+            }
+
+            await this._executeQuery('COMMIT');
+            
+            return retValue;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+	// eslint-disable-next-line require-jsdoc
+    async _getLockOwner(date, passScheduleID) {
+        const checkLockedPassQuery = {
+            text: `SELECT        pass_lock.account_id AS account_id
+            FROM    pass_lock
+            WHERE   pass_lock.pass_date = $1 AND
+                    pass_lock.pass_schedule_id = $2 AND
+                    (NOW() - pass_lock.lock_start) <= ($3 * 60) * INTERVAL '1' second`,
+            values: [date, passScheduleID, this.lockDuration],
+        };
+
+        try {
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(checkLockedPassQuery);
+
+            let retValue = -1;
+            if (results.rowCount > 0) {
+                retValue = results.rows[0].account_id;
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    /**
+     * Unlock the temporarily locked pass slot that the user had.
+     * @param {string} username The username that related to the user.
+     * @returns {boolean | null} true or false to give a confirmation of the unlocking.
+     *                           null indicates that something went wrong and it gets logged.
+     */
+    async unlockPass(username) {
+        try {
+            const personInfo = await this._getPersonInfo(username);
+            
+            if (personInfo === null) {
+                return false;
+            }
+
+            const deleteLockQuery = {
+                text: `DELETE FROM public.pass_lock
+                WHERE pass_lock.account_id = $1`,
+                values: [personInfo.accountID],
+            };
+
+            await this._executeQuery('BEGIN');
+            
+            await this._executeQuery(deleteLockQuery);
+            
+            await this._executeQuery('COMMIT');
+            
             return true;
         } catch (err) {
             this.logger.logException(err);
