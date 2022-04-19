@@ -1,6 +1,8 @@
 'use strict';
 const UserApi = require('./UserApi');
+const BookingApi = require('./BookingApi');
 const UserErrorHandler = require('./error/UserErrorHandler');
+const BookingErrorHandler = require('./error/BookingErrorHandler');
 const GeneralErrorHandler = require('./error/GeneralErrorHandler');
 
 /**
@@ -60,7 +62,9 @@ class RequestHandlerLoader {
 
 const requestHandlerLoader = new RequestHandlerLoader();
 requestHandlerLoader.addRequestHandler(new UserApi());
+requestHandlerLoader.addRequestHandler(new BookingApi());
 requestHandlerLoader.addErrorHandler(new UserErrorHandler());
+requestHandlerLoader.addErrorHandler(new BookingErrorHandler());
 requestHandlerLoader.addErrorHandler(new GeneralErrorHandler());
 
 module.exports = requestHandlerLoader;

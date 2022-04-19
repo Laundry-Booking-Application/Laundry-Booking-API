@@ -7,7 +7,7 @@ const userStatusCodes = require('../../util/userStatusCodes');
 const Authorization = require('./auth/Authorization');
 
 /**
- * Handles the REST API requests for the user endpoint.
+ * Handles the REST API requests for the user endpoints.
  */
 class UserApi extends RequestHandler {
     /**
