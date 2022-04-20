@@ -8,9 +8,11 @@ const Logger = require('../util/Logger');
 const UserDTO = require('../model/UserDTO');
 const RegisterDTO = require('../model/RegisterDTO');
 const UserInfoDTO = require('../model/UserInfoDTO');
+const BookingDTO = require('../model/BookingDTO');
 const privilegeEnum = require('../util/privilegeEnum');
 const userStatusCodes = require('../util/userStatusCodes');
 const userInfoStatusCodes = require('../util/userInfoStatusCodes');
+const bookingStatusCodes = require('../util/bookingStatusCodes');
 const PersonInfo = require('./PersonInfo');
 
 /**
