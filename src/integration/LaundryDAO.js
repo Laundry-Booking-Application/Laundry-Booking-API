@@ -530,12 +530,12 @@ class LaundryDAO {
      * Book the chosen pass for the user.
      * @param {string} username The username related to the person.
      * @param {int} roomNumber The number related to the room.
-     * @param {string} passRange The time frame that the pass have.
      * @param {string} date The date that the pass is going to be.
+     * @param {string} passRange The time frame that the pass have.
      * @returns {BookingDTO | null} An object that has the result of the booking result.
      *                              null indicates that something went wrong and it gets logged.
      */
-    async bookPass(username, roomNumber, passRange, date) {
+    async bookPass(username, roomNumber, date, passRange) {
         try {
             const currentWeek = dayjs().week();
             const dateWeek = dayjs(date).week();
@@ -543,7 +543,10 @@ class LaundryDAO {
             const personInfo = await this._getPersonInfo(username);
             const passScheduleID = await this._getPassInfo(roomNumber, passRange);
 
-            if (currentWeek > dateWeek || dateWeek >= (currentWeek + 1)) {
+            if (currentWeek > dateWeek || dateWeek > (currentWeek + 1)) {
+                console.log(currentWeek > dateWeek);
+                console.log(dateWeek > (currentWeek + 1));
+                
                 return new BookingDTO('', 0, '', bookingStatusCodes.InvalidDate);
             }
 
@@ -563,7 +566,7 @@ class LaundryDAO {
             const periodBookedPasses = await this._getPeriodBookedPasses(personInfo.accountID, startMonthDate, endMonthDate);
 
             if (bookedPassID !== -1) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.ExistentPass);
+                return new BookingDTO('', 0, '', bookingStatusCodes.BookedPass);
             }
 
             if (lockOwnerID !== personInfo.accountID && lockOwnerID !== -1) {

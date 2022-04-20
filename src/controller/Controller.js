@@ -112,7 +112,7 @@ class Controller {
     * while processing the operation, or null if an error occurs while contacting the database.
     *
     * @param {String} issuerUsername The username of the user that issued the request.
-    *                                The user that issued the request must be authenticated.
+    *                                The user that issued the request must be a 'Standard' user.
     * @param {int} roomNumber The number related to the room chosen.
     * @param {string} date The date that the pass is going to be.
     * @param {string} passRange The time frame that the pass have.
@@ -132,13 +132,32 @@ class Controller {
     * while processing the operation, or null if an error occurs while contacting the database.
     *
     * @param {String} issuerUsername The username of the user that issued the request.
-    *                                The user that issued the request must be authenticated.
+    *                                The user that issued the request must be a 'Standard' user.
     * @returns {boolean | null} true or false to give a confirmation of the unlocking attempt, 
     *                           or null in case of an error while contacting the database. 
     */
     async unlockPass(issuerUsername) {
         const result = await this.laundryDAO.unlockPass(issuerUsername);
         return result;
+    }
+
+    /**
+    * Books the chosen laundry pass for the user.
+    * This method issues a call to the bookPass method in the {LaundryDAO},
+    * Returns a {BookingDTO} that contains information about the booking attempt
+    * or null in case of an error while contacting the database.
+    *
+    * @param {String} issuerUsername The username of the user that issued the request.
+    *                                The user that issued the request must be a 'Standard' user.
+    * @param {int} roomNumber The number related to the room chosen.
+    * @param {string} date The date that the pass is going to be.
+    * @param {string} passRange The time frame that the pass have.
+    * @returns {BookingDTO | null} The booking attempt result {BookingDTO}, 
+    *                              or null in case of an error while contacting the database. 
+    */
+    async bookPass(issuerUsername, roomNumber, date, passRange) {
+        const bookingDTO = await this.laundryDAO.bookPass(issuerUsername, roomNumber, date, passRange);
+        return bookingDTO;
     }
 
 }
