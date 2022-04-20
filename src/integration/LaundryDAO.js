@@ -40,8 +40,10 @@ class LaundryDAO {
         });
 
         this.logger = new Logger('LaundryDatabaseHandler');
+		dayjs.extend(weekOfYear);
 		
 		this.activePassesAllowed = 1;
+		this.totalMonthPassesAllowed = 6;
 		this.lockDuration = 5; // Minutes
     }
 
@@ -331,7 +333,7 @@ class LaundryDAO {
 
             const bookedPassID = await this._getBookedPassID(date, passScheduleID);
             const lockOwnerID = await this._getLockOwner(date, passScheduleID);
-            const activePassesCount = await this._getActivePasses(personInfo.accountID);
+            const activePassesCount = await this._getActivePasses(personInfo.accountID, passRange);
 
             if (bookedPassID !== -1) {
                 return false;
@@ -369,7 +371,6 @@ class LaundryDAO {
             return null;
         }
     }
-
 
     // eslint-disable-next-line require-jsdoc
     async _getPassInfo(roomNumber, passRange) {
@@ -430,15 +431,18 @@ class LaundryDAO {
     }
 
     // eslint-disable-next-line require-jsdoc
-    async _getActivePasses(accountID) {
+    async _getActivePasses(accountID, range) {
         try {
             const checkActivePassesQuery = {
-                text: `SELECT        COUNT(pass_booking.id) AS booking_count
+                text: `SELECT      COUNT(pass_booking.id) AS booking_count
                 FROM        pass_booking
+                INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
+                INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
                 WHERE       pass_booking.account_id = $1 AND
-                            pass_booking.date >= CURRENT_DATE
+                pass_booking.date >= CURRENT_DATE AND
+                pass.range >= $2 
                 GROUP BY    pass_booking.id`,
-                values: [accountID]
+                values: [accountID, range]
             };
 
             let retValue = -1;
@@ -520,6 +524,118 @@ class LaundryDAO {
         }
     }
     
+	/**
+     * Book the chosen pass for the user.
+     * @param {string} username The username related to the person.
+     * @param {int} roomNumber The number related to the room.
+     * @param {string} passRange The time frame that the pass have.
+     * @param {string} date The date that the pass is going to be.
+     * @returns {BookingDTO | null} An object that has the result of the booking result.
+     *                              null indicates that something went wrong and it gets logged.
+     */
+    async bookPass(username, roomNumber, passRange, date) {
+        try {
+            const currentWeek = dayjs().week();
+            const dateWeek = dayjs(date).week();
+            const dateMonth = dayjs(date).month();
+            const personInfo = await this._getPersonInfo(username);
+            const passScheduleID = await this._getPassInfo(roomNumber, passRange);
+
+            if (currentWeek > dateWeek || dateWeek >= (currentWeek + 1)) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidDate);
+            }
+
+            if (personInfo === null) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidUser);
+            }
+
+            if (passScheduleID === -1) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidPassInfo);
+            }
+
+            const { startMonthDate, endMonthDate } = await this._monthStartAndEndDate(dateMonth);
+
+            const bookedPassID = await this._getBookedPassID(date, passScheduleID);
+            const lockOwnerID = await this._getLockOwner(date, passScheduleID);
+            const activePassesCount = await this._getActivePasses(personInfo.accountID, passRange);
+            const periodBookedPasses = await this._getPeriodBookedPasses(personInfo.accountID, startMonthDate, endMonthDate);
+
+            if (bookedPassID !== -1) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.ExistentPass);
+            }
+
+            if (lockOwnerID !== personInfo.accountID && lockOwnerID !== -1) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.LockedPass);
+            }
+
+            if (activePassesCount >= this.activePassesAllowed) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.ExistentActivePass);
+            }
+
+            if (periodBookedPasses >= this.totalMonthPassesAllowed) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.PassCountExceeded);
+            }
+
+            await this._executeQuery('BEGIN');
+
+            let retValue;
+            const insertBookingQuery = {
+                text: `INSERT INTO public.pass_booking(date, account_id, pass_schedule_id)
+                    VALUES ($1, $2, $3)`,
+                values: [date, personInfo.accountID, passScheduleID],
+            };
+
+            await this._executeQuery(insertBookingQuery);
+            await this.unlockPass(username);
+            retValue = new BookingDTO(date, roomNumber, passRange, bookingStatusCodes.OK);
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _monthStartAndEndDate(month) {
+        const startMonthDate = dayjs().month(month).startOf('month').add(1, 'day');
+        const endMonthDate = dayjs().month(month).endOf('month');
+        return { startMonthDate: startMonthDate, endMonthDate: endMonthDate };
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _getPeriodBookedPasses(accountID, startPeriod, endPeriod) {
+        try {
+            const checkPeriodBookedPassesQuery = {
+                text: `SELECT        COUNT(pass_booking.id) AS specific_booking_count
+                FROM        pass_booking
+                WHERE        pass_booking.account_id = $1 AND
+                            pass_booking.date >= $2 AND
+                            pass_booking.date <= $3
+                GROUP BY    pass_booking.id`,
+                values: [accountID, startPeriod, endPeriod],
+            };
+
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(checkPeriodBookedPassesQuery);
+
+            let retValue = 0;
+
+            if (results.rowCount > 0) {
+                retValue = results.rows[0].specific_booking_count;
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            throw err;
+        }
+    }
+	
     // eslint-disable-next-line require-jsdoc
     async _getPersonInfo(username) {
         const getInfoQuery = {
