@@ -2,7 +2,7 @@
 
 const { check, validationResult } = require('express-validator');
 const RequestHandler = require('./RequestHandler');
-// const Validators = require('../../util/Validators');
+const Validators = require('../../util/Validators');
 const userStatusCodes = require('../../util/userStatusCodes');
 const Authorization = require('./auth/Authorization');
 
@@ -112,7 +112,7 @@ class UserApi extends RequestHandler {
                 check('lastname').isAlpha(),
                 check('personalNumber').custom((value) => {
                     // This will throw an AssertionError if the validation fails
-                    // Validators.isPersonalNumberFormat(value, 'personalNumber');
+                    Validators.isPersonalNumberFormat(value, 'personalNumber');
                     // Indicates the success of the custom validator check
                     return true;
                 }),
