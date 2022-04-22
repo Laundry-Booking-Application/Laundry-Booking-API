@@ -115,7 +115,7 @@ class Controller {
     *                                The user that issued the request must be a 'Standard' user.
     * @param {int} roomNumber The number related to the room chosen.
     * @param {string} date The date that the pass is going to be.
-    * @param {string} passRange The time frame that the pass have.
+    * @param {string} passRange The time frame that the pass has.
     * @returns {boolean | null} true or false to give a confirmation of the locking attempt, 
     *                           or null in case of an error while contacting the database. 
     */
@@ -150,14 +150,50 @@ class Controller {
     * @param {String} issuerUsername The username of the user that issued the request.
     *                                The user that issued the request must be a 'Standard' user.
     * @param {int} roomNumber The number related to the room chosen.
-    * @param {string} date The date that the pass is going to be.
-    * @param {string} passRange The time frame that the pass have.
+    * @param {string} date The date of the laundry pass.
+    * @param {string} passRange The time frame that the pass has.
     * @returns {BookingDTO | null} The booking attempt result {BookingDTO}, 
     *                              or null in case of an error while contacting the database. 
     */
     async bookPass(issuerUsername, roomNumber, date, passRange) {
         const bookingDTO = await this.laundryDAO.bookPass(issuerUsername, roomNumber, date, passRange);
         return bookingDTO;
+    }
+
+    /**
+    * Gets the active laundry pass of the provided user.
+    * This method issues a call to the getBookedPass method in the {LaundryDAO},
+    * Returns a {BookingDTO} that contains information about the active booking
+    * or null in case of an error while contacting the database.
+    *
+    * @param {String} username The username related to the user.
+    *                          The user that issued the request must be an authenticated user.
+    * @returns {BookingDTO | null} A {BookingDTO} containing the booking information, 
+    *                              or null in case of an error while contacting the database. 
+    */
+    async getBookedPass(username) {
+        const bookingDTO = await this.laundryDAO.getBookedPass(username);
+        return bookingDTO;
+    }
+
+
+    /**
+    * Cancels an active laundry pass.
+    * This method issues a call to the cancelBookedPass method in the {LaundryDAO},
+    * Returns a {BookingDTO} that contains information about the booking attempt
+    * or null in case of an error while contacting the database.
+    *
+    * @param {String} issuerUsername The username of the user that issued the request.
+    *                                The user that issued the request must be an authenticated user.
+    * @param {int} roomNumber The laundry room number.
+    * @param {string} date The date that the active laundry pass is booked on.
+    * @param {string} passRange The time frame that the pass has.
+    * @returns {boolean | null} true or false to indicate whether the pass was cancelled or not, 
+    *                           or null in case of an error while contacting the database. 
+    */
+     async cancelBookedPass(issuerUsername, roomNumber, date, passRange) {
+        const cancellationResult = await this.laundryDAO.cancelBookedPass(issuerUsername, roomNumber, date, passRange);
+        return cancellationResult;
     }
 
 }

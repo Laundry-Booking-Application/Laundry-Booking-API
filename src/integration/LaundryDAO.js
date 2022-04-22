@@ -639,7 +639,7 @@ class LaundryDAO {
     }
 	
 	/**
-     * Get the booking of the person that they have active.
+     * Get the active booking of the person.
      * @param {string} username The username related to the person.
      * @returns {BookingDTO | null} An object with the booking information.
      *                              null indicates that something went wrong and it gets logged.
