@@ -544,9 +544,6 @@ class LaundryDAO {
             const passScheduleID = await this._getPassInfo(roomNumber, passRange);
 
             if (currentWeek > dateWeek || dateWeek > (currentWeek + 1)) {
-                console.log(currentWeek > dateWeek);
-                console.log(dateWeek > (currentWeek + 1));
-                
                 return new BookingDTO('', 0, '', bookingStatusCodes.InvalidDate);
             }
 
@@ -641,6 +638,106 @@ class LaundryDAO {
         }
     }
 	
+	/**
+     * Get the booking of the person that they have active.
+     * @param {string} username The username related to the person.
+     * @returns {BookingDTO | null} An object with the booking information.
+     *                              null indicates that something went wrong and it gets logged.
+     */
+    async getBookedPass(username) {
+        try {
+            // Can be combined with the get passes for the resident and mark the booking
+            const personInfo = await this._getPersonInfo(username);
+
+            if (personInfo === null) {
+                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidUser);
+            }
+
+            const getBookingQuery = {
+                text: `SELECT    pass_booking.date, pass_schedule.room, pass.range
+                FROM        pass_booking
+                INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
+                INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
+                WHERE        pass_booking.account_id = $1 AND
+                pass_booking.date >= CURRENT_DATE`,
+                values: [personInfo.accountID],
+            };
+
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(getBookingQuery);
+
+            let retValue;
+
+            if (results.rowCount > 0) {
+                retValue = new BookingDTO(results.rows[0].date, results.rows[0].room, results.rows[0].range, bookingStatusCodes.OK);
+            } else {
+                retValue = new BookingDTO('', 0, '', bookingStatusCodes.NoBooking);
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+
+    /**
+     * Cancel an active booking of the person.
+     * @param {string} username The username related to the person.
+     * @param {int} roomNumber The number related to the room.
+     * @param {string} date The date that the pass is booked on.
+     * @param {string} passRange The time frame of the booked pass.
+     * @returns {boolean | null} true or false to indicate that the booking has been canceled.
+     *                           null indicates that something went wrong and it gets logged.
+     */
+    async cancelBookedPass(username, roomNumber, date, passRange) {
+        try {
+            // return?
+            const personInfo = await this._getPersonInfo(username);
+            const passScheduleID = await this._getPassInfo(roomNumber, passRange);
+
+            if (personInfo === null) {
+                return false;
+            }
+
+            if (passScheduleID === -1) {
+                return false;
+            }
+
+            const cancelBookingQuery = {
+                text: `DELETE FROM public.pass_booking
+                WHERE       pass_booking.date = $1 AND
+                            $1  >= CURRENT_DATE AND
+                            pass_schedule_id = $2 AND
+                            CASE WHEN (($3 = $4) IS NOT TRUE) THEN
+                                pass_booking.account_id = $5
+                            ELSE
+                                TRUE
+                            END`,
+                values: [date, passScheduleID, personInfo.privilegeID, privilegeEnum.Administrator, personInfo.accountID],
+            };
+
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(cancelBookingQuery);
+
+            let retValue = false;
+
+            if (results.rowCount > 0) {
+                retValue = true;
+            } 
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+	
     // eslint-disable-next-line require-jsdoc
     async _getPersonInfo(username) {
         const getInfoQuery = {
@@ -682,7 +779,7 @@ class LaundryDAO {
             return results;
         } catch (mainErr) {
             try {
-                if (this.client._connected) {
+                if (this.client !== undefined && this.client._connected) {
                     await this.this.client.query('ROLLBACK')
                 }
             } catch (err) {
