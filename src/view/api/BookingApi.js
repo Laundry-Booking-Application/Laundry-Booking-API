@@ -2,7 +2,7 @@
 
 const { check, validationResult } = require('express-validator');
 const RequestHandler = require('./RequestHandler');
-// const Validators = require('../../util/Validators');
+const Validators = require('../../util/Validators');
 const Authorization = require('./auth/Authorization');
 const bookingStatusCodes = require('../../util/bookingStatusCodes');
 
@@ -54,11 +54,16 @@ class BookingApi extends RequestHandler {
                 '/lockPass',
                 check('roomNumber').custom((value) => {
                     // This will throw an AssertionError if the validation fails
-                    // Validators.isPositiveWholeNumber(value, 'roomNumber');
+                    Validators.isPositiveWholeNumber(value, 'roomNumber');
                     // Indicates the success of the custom validator check
                     return true;
                 }),
-                check('date').isString(),
+                check('date').custom((value) => {
+                    // This will throw an AssertionError if the validation fails
+                    Validators.isDateFormat(value, 'date');
+                    // Indicates the success of the custom validator check
+                    return true;
+                }),
                 check('passRange').isString(),
                 async (req, res, next) => {
                     try {
@@ -142,11 +147,16 @@ class BookingApi extends RequestHandler {
                 '/bookPass',
                 check('roomNumber').custom((value) => {
                     // This will throw an AssertionError if the validation fails
-                    // Validators.isPositiveWholeNumber(value, 'roomNumber');
+                    Validators.isPositiveWholeNumber(value, 'roomNumber');
                     // Indicates the success of the custom validator check
                     return true;
                 }),
-                check('date').isString(), // Might change
+                check('date').custom((value) => {
+                    // This will throw an AssertionError if the validation fails
+                    Validators.isDateFormat(value, 'date');
+                    // Indicates the success of the custom validator check
+                    return true;
+                }),
                 check('passRange').isString(),
                 async (req, res, next) => {
                     try {
