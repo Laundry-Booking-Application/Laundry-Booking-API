@@ -9,10 +9,14 @@ const UserDTO = require('../model/UserDTO');
 const RegisterDTO = require('../model/RegisterDTO');
 const UserInfoDTO = require('../model/UserInfoDTO');
 const BookingDTO = require('../model/BookingDTO');
+const PassDTO = require('../model/PassDTO');
+const PassScheduleDTO = require('../model/PassScheduleDTO');
 const privilegeEnum = require('../util/privilegeEnum');
 const userStatusCodes = require('../util/userStatusCodes');
 const userInfoStatusCodes = require('../util/userInfoStatusCodes');
 const bookingStatusCodes = require('../util/bookingStatusCodes');
+const scheduleStatusCodes = require('../util/scheduleStatusCodes');
+const slotStatusEnum = require('../util/slotStatusEnum');
 const PersonInfo = require('./PersonInfo');
 
 /**
@@ -42,11 +46,11 @@ class LaundryDAO {
         });
 
         this.logger = new Logger('LaundryDatabaseHandler');
-		dayjs.extend(weekOfYear);
-		
-		this.activePassesAllowed = 1;
-		this.totalMonthPassesAllowed = 6;
-		this.lockDuration = 5; // Minutes
+        dayjs.extend(weekOfYear);
+
+        this.activePassesAllowed = 1;
+        this.totalMonthPassesAllowed = 6;
+        this.lockDuration = 5; // Minutes
     }
 
     /**
@@ -94,14 +98,14 @@ class LaundryDAO {
                 retValue = new UserDTO(username, privilegeEnum.Invalid, userStatusCodes.LoginFailure);
             } else {
                 const passwordVerification = await this._verifyPasswordHash(password, results.rows[0].password);
-                
-                if(!passwordVerification) {
+
+                if (!passwordVerification) {
                     retValue = new UserDTO(username, privilegeEnum.Invalid, userStatusCodes.LoginFailure);
                 } else {
                     retValue = new UserDTO(results.rows[0].username, results.rows[0].privilege_id, userStatusCodes.OK);
                 }
             }
-            
+
             await this._executeQuery('COMMIT');
 
             return retValue;
@@ -210,7 +214,7 @@ class LaundryDAO {
      * @param {string} username The username of the related user that initiated the request.
      * @returns {UserInfoDTO | null} An array of objects that hold all the information about the results.
      *                              null indicates that something went wrong and it gets logged.
-     */         
+     */
     async listUsers(username) {
         try {
             const personInfo = await this._getPersonInfo(username);
@@ -239,8 +243,10 @@ class LaundryDAO {
             const results = await this._executeQuery(getUsersQuery);
 
             for (let i = 0; i < results.rowCount; i++) {
-                userInfoList[i] = {firstName: results.rows[i].firstname, lastName: results.rows[i].lastname, 
-                                personalNumber: results.rows[i].personal_number, username: results.rows[i].username}
+                userInfoList[i] = {
+                    firstName: results.rows[i].firstname, lastName: results.rows[i].lastname,
+                    personalNumber: results.rows[i].personal_number, username: results.rows[i].username
+                }
             }
 
             retValue = new UserInfoDTO([...userInfoList], userInfoStatusCodes.OK);
@@ -301,7 +307,7 @@ class LaundryDAO {
             await this._executeQuery(deleteBookingQuery)
             await this._executeQuery(deleteAccountQuery)
             await this._executeQuery(deletePersonQuery)
-            
+
             await this._executeQuery('COMMIT');
 
             return true;
@@ -310,8 +316,284 @@ class LaundryDAO {
             return null;
         }
     }
-	
-	/**
+
+    /**
+     * Get the number corresponding to the current date.
+     * @returns {int} The number of the current week.
+     */
+    async getWeekNumber() {
+        try {
+            return dayjs().week() - 1;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    /**
+     * Get the passes schedule for the week. Resident is allowed to see the bookings of one week before and after the current one.
+     * @param {string} username The username related to the person.
+     * @param {int} week The specific week to get the passes related to the week dates.
+     * @returns {PassScheduleDTO | null} An object with All the bookings for a specific week.
+     *                                   null indicates that something went wrong and it gets logged.
+     */
+    async getResidentPasses(username, week) {
+        try {
+            const weekCorrection = week + 1;
+            const weekOffset = 1;
+            const checkWeek = await this._checkWeekSchedule(weekCorrection, weekOffset);
+            const personInfo = await this._getPersonInfo(username);
+
+            if (!checkWeek) {
+                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidWeek);
+            }
+
+            if (personInfo === null) {
+                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidUser);
+            }
+
+            if (personInfo.privilegeID !== privilegeEnum.Standard && personInfo.privilegeID !== privilegeEnum.Administrator) {
+                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidPrivilege);
+            }
+
+            let passesSchedule = await this._getPassesSchedule(weekCorrection);
+            const userBooking = await this.getBookedPass(username);
+            
+            if (passesSchedule === null) {
+                return null;
+            }
+            
+            const bookingParam = [{date: userBooking.date, room: userBooking.roomNumber, range: userBooking.passRange}];
+            await this._fillPassSchedule(passesSchedule, bookingParam, slotStatusEnum.SelfBooking);
+
+            passesSchedule.roomPasses.forEach(room => {
+                room.passes.forEach(pass => {
+                    pass.slots.forEach(slot => {
+                        delete slot.username;
+                    });
+                });
+            });
+
+            passesSchedule.weekNumber = week;
+            return passesSchedule;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+
+    /**
+     * Get the passes schedule for the week with all the username related to the bookings. Can be only used by an administrator.
+     * @param {string} username The username related to the person.
+     * @param {int} week The specific week to get the passes related to the week dates.
+     * @returns {PassScheduleDTO | null} An object with All the bookings for a specific week.
+     *                                   null indicates that something went wrong and it gets logged.
+     */
+    async getPasses(username, week) {
+        try {
+            const personInfo = await this._getPersonInfo(username);
+            const weekCorrection = week + 1;
+
+            if (personInfo === null) {
+                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidUser);
+            }
+
+            if (personInfo.privilegeID !== privilegeEnum.Administrator) {
+                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidPrivilege);
+            }
+
+            let passesSchedule = await this._getPassesSchedule(weekCorrection);
+
+            if (passesSchedule === null) {
+                return null;
+            }
+
+            passesSchedule.weekNumber = week;
+            return passesSchedule;
+
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _checkWeekSchedule(week, offset) {
+        const currentWeek = dayjs().week();
+
+        if ((currentWeek - offset) <= week && (currentWeek + offset) >= week) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _getPassesSchedule(week) {
+        try {
+            const { startWeekDate, endWeekDate } = await this._weekStartAndEndDate(week);
+            let passSchedule = await this._buildPassesSchedule(week);
+
+            if (passSchedule === null) {
+                return null;
+            }
+
+            const getSpecificBookingsQuery = {
+                text: `SELECT	pass_booking.date, pass_schedule.room,
+                pass.range, account.username
+                FROM	pass_booking
+                INNER JOIN account ON (account.id = pass_booking.account_id)
+                INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
+                INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
+                WHERE	pass_booking.date >= $1 AND
+                pass_booking.date <= $2`,
+                values: [startWeekDate, endWeekDate],
+            };
+
+            const getLockedBookingsQuery = {
+                text: `SELECT    pass_lock.pass_date AS date, pass_schedule.room,
+                pass.range, account.username
+                FROM        pass_lock
+                INNER JOIN account ON (account.id = pass_lock.account_id)
+                INNER JOIN pass_schedule ON (pass_schedule.id = pass_lock.pass_schedule_id)
+                INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
+                WHERE    pass_lock.pass_date >= CURRENT_DATE AND
+                (NOW() - pass_lock.lock_start) <= ($1 * 60) * INTERVAL '1' second`,
+                values: [this.lockDuration],
+            };
+
+            await this._executeQuery('BEGIN');
+
+            const getSpecificBookingsRes = await this._executeQuery(getSpecificBookingsQuery);
+            const getLockedBookingsRes = await this._executeQuery(getLockedBookingsQuery);
+
+            await this._fillPassSchedule(passSchedule, getSpecificBookingsRes.rows, slotStatusEnum.Taken);
+            await this._fillPassSchedule(passSchedule, getLockedBookingsRes.rows, slotStatusEnum.Taken);
+
+            await this._executeQuery('COMMIT');
+
+            passSchedule.statusCode = bookingStatusCodes.OK;
+            return passSchedule;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _fillPassSchedule(passSchedule, passes, status) {
+        try {
+            for (let i = 0; i < passes.length; i++) {
+                passSchedule.roomPasses.forEach(room => {
+                    if (room.roomNum === passes[i].room) {
+                        room.passes.forEach(pass => {
+                            if (pass.date === passes[i].date) {
+                                pass.slots.forEach(slot => {
+                                    if (slot.range === passes[i].range) {
+                                        slot.status = status;
+                                        slot.username = passes[i].username;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _weekStartAndEndDate(week) {
+        const startWeekDate = dayjs().week(week).day(1).$d.toISOString().substring(0, 10);
+        const endWeekDate = dayjs().week(week).day(7).$d.toISOString().substring(0, 10);
+        return { startWeekDate: startWeekDate, endWeekDate: endWeekDate };
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _buildPassesSchedule(week) {
+        try {
+            const passSchedule = await this._getPassScheduleScheme();
+            const weekDate = await this._getWeekDates(week);
+
+            if (passSchedule === null) {
+                return null;
+            }
+
+            let roomPasses = [];
+            for (let roomCounter = 0; roomCounter < passSchedule.length; roomCounter++) {
+                let roomPass = [];
+
+                for (let day = 0; day < weekDate.length; day++) {
+                    let slots = [];
+
+                    for (let slotCounter = 0; slotCounter < passSchedule[roomCounter].slots.length; slotCounter++) {
+                        slots[slotCounter] = {
+                            range: passSchedule[roomCounter].slots[slotCounter],
+                            status: slotStatusEnum.Available,
+                            username: ''
+                        };
+                    }
+
+                    roomPass[day] = new PassDTO(weekDate[day], slots);
+                }
+
+                roomPasses[roomCounter] = { roomNum: passSchedule[roomCounter].room, passes: roomPass };
+            }
+
+            return new PassScheduleDTO(week, passSchedule.length, roomPasses);
+
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _getPassScheduleScheme() {
+        try {
+            const passScheduleQuery = {
+                text: `SELECT		pass_schedule.room, 
+                ARRAY_AGG(pass.range) AS slots
+                FROM		pass_schedule
+                            INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
+                GROUP BY	pass_schedule.room
+                ORDER BY    pass_schedule.room ASC`,
+                values: [],
+            };
+
+            let retValue = null;
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(passScheduleQuery);
+
+            if (results.rowCount > 0) {
+                retValue = results.rows;
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _getWeekDates(week) {
+        try {
+            const offset = 1;
+            let weekDate = [];
+
+            for (let day = 0; day < 7; day++) {
+                weekDate[day] = dayjs().week(week).day(day + offset).$d.toISOString().substring(0, 10);
+            }
+
+            return weekDate;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    /**
      * Lock the pass slot temporarily for an amount of time to allow the user to confirm their choice.
      * @param {string} username The username that is related to the user.
      * @param {int} roomNumber The number related to the room chosen.
@@ -356,13 +638,13 @@ class LaundryDAO {
             const addLockQuery = {
                 text: `INSERT INTO public.pass_lock(lock_start, pass_date, account_id, pass_schedule_id)
                 VALUES (NOW(), $1, $2, $3)`,
-                values: [date, personInfo.accountID ,passScheduleID],
+                values: [date, personInfo.accountID, passScheduleID],
             };
 
             await this.unlockPass(username);
 
             await this._executeQuery('BEGIN');
-            
+
             await this._executeQuery(addLockQuery);
 
             await this._executeQuery('COMMIT');
@@ -402,7 +684,8 @@ class LaundryDAO {
             throw err;
         }
     }
-    
+
+
     // eslint-disable-next-line require-jsdoc
     async _getBookedPassID(date, passScheduleID) {
         const checkBookedPassQuery = {
@@ -449,22 +732,22 @@ class LaundryDAO {
 
             let retValue = -1;
             await this._executeQuery('BEGIN');
-            
+
             const result = await this._executeQuery(checkActivePassesQuery);
-            
+
             if (result.rowCount > 0) {
                 retValue = result.rows[0].booking_count;
             }
 
             await this._executeQuery('COMMIT');
-            
+
             return retValue;
         } catch (err) {
             throw err;
         }
     }
 
-	// eslint-disable-next-line require-jsdoc
+    // eslint-disable-next-line require-jsdoc
     async _getLockOwner(date, passScheduleID) {
         const checkLockedPassQuery = {
             text: `SELECT        pass_lock.account_id AS account_id
@@ -502,7 +785,7 @@ class LaundryDAO {
     async unlockPass(username) {
         try {
             const personInfo = await this._getPersonInfo(username);
-            
+
             if (personInfo === null) {
                 return false;
             }
@@ -514,19 +797,19 @@ class LaundryDAO {
             };
 
             await this._executeQuery('BEGIN');
-            
+
             await this._executeQuery(deleteLockQuery);
-            
+
             await this._executeQuery('COMMIT');
-            
+
             return true;
         } catch (err) {
             this.logger.logException(err);
             return null;
         }
     }
-    
-	/**
+
+    /**
      * Book the chosen pass for the user.
      * @param {string} username The username related to the person.
      * @param {int} roomNumber The number related to the room.
@@ -637,8 +920,8 @@ class LaundryDAO {
             throw err;
         }
     }
-	
-	/**
+
+    /**
      * Get the active booking of the person.
      * @param {string} username The username related to the person.
      * @returns {BookingDTO | null} An object with the booking information.
@@ -695,7 +978,6 @@ class LaundryDAO {
      */
     async cancelBookedPass(username, roomNumber, date, passRange) {
         try {
-            // return?
             const personInfo = await this._getPersonInfo(username);
             const passScheduleID = await this._getPassInfo(roomNumber, passRange);
 
@@ -704,6 +986,12 @@ class LaundryDAO {
             }
 
             if (passScheduleID === -1) {
+                return false;
+            }
+
+            const bookedPass = await this.getBookedPass(username);
+
+            if (bookedPass > passRange) {
                 return false;
             }
 
@@ -737,7 +1025,7 @@ class LaundryDAO {
             return null;
         }
     }
-	
+
     // eslint-disable-next-line require-jsdoc
     async _getPersonInfo(username) {
         const getInfoQuery = {
