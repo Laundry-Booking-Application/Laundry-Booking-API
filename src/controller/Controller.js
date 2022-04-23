@@ -191,9 +191,51 @@ class Controller {
     * @returns {boolean | null} true or false to indicate whether the pass was cancelled or not, 
     *                           or null in case of an error while contacting the database. 
     */
-     async cancelBookedPass(issuerUsername, roomNumber, date, passRange) {
+    async cancelBookedPass(issuerUsername, roomNumber, date, passRange) {
         const cancellationResult = await this.laundryDAO.cancelBookedPass(issuerUsername, roomNumber, date, passRange);
         return cancellationResult;
+    }
+
+    /**
+    * Fetches the laundry passes' schedule for the specified week.
+    * Residents are allowed to see the bookings of one week before and after the current one.
+    * This method issues a call to the getResidentPasses method in the {LaundryDAO},
+    * Returns a {PassScheduleDTO} that contains information about the bookings for the specified week,
+    * or null in case of an error while contacting the database.
+    *
+    * @param {String} issuerUsername The username of the user that issued the request.
+    *                                The user that issued the request must be an authenticated user.
+    * @param {int} week The requested week to get the laundry passes' schedule for.
+    *                   Accepted values are -1, 0 and 1 for previous, current and next week respectively.
+    * @returns {PassScheduleDTO | null} A {PassScheduleDTO} containing the bookings for the specified week,
+    *                                   or null in case of an error while contacting the database. 
+    */
+    async getResidentPasses(issuerUsername, week) {
+        const currentWeekNumber = await this.laundryDAO.getWeekNumber();
+        const requestedWeekNumber = currentWeekNumber + parseInt(week);
+        const passScheduleDTO = await this.laundryDAO.getResidentPasses(issuerUsername, requestedWeekNumber);
+        return passScheduleDTO;
+    }
+
+
+    /**
+    * Fetches the passes' schedule for the specified week including the usernames related to the bookings.
+    * This method issues a call to the getPasses method in the {LaundryDAO},
+    * Returns a {PassScheduleDTO} that contains information about the bookings for the specified week,
+    * or null in case of an error while contacting the database.
+    *
+    * @param {String} issuerUsername The username of the user that issued the request.
+    *                                The user that issued the request must be an administrator.
+    * @param {int} week The requested week to get the laundry passes' schedule for.
+    *                   This parameter is relative to the current week, e.g. -2 is two weeks before the current week.
+    * @returns {PassScheduleDTO | null} A {PassScheduleDTO} containing the bookings for the specified week,
+    *                                   or null in case of an error while contacting the database. 
+    */
+    async getPasses(issuerUsername, week) {
+        const currentWeekNumber = await this.laundryDAO.getWeekNumber();
+        const requestedWeekNumber = currentWeekNumber + parseInt(week);
+        const passScheduleDTO = await this.laundryDAO.getPasses(issuerUsername, requestedWeekNumber);
+        return passScheduleDTO;
     }
 
 }
