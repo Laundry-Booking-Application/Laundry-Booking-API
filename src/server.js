@@ -45,7 +45,7 @@ app.get('/', (req, res, next) => {
 });
 
 const requestHandlerLoader = require('./view/api');
-requestHandlerLoader.loadHandlers(app);
+requestHandlerLoader.loadRequestHandlers(app);
 requestHandlerLoader.loadErrorHandlers(app);
 
 // process.env.PORT is set by Heroku, process.env.SERVER_PORT is a fallback

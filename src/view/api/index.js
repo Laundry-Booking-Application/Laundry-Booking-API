@@ -41,7 +41,7 @@ class RequestHandlerLoader {
    *
    * @param {Application} app The express application that will host the request handlers.
    */
-    loadHandlers(app) {
+    loadRequestHandlers(app) {
         this.reqHandlers.forEach((reqHandler) => {
             reqHandler.registerHandler();
             app.use(reqHandler.path, reqHandler.router);
