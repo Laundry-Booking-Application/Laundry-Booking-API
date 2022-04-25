@@ -1,6 +1,6 @@
 'use strict';
 
-// const Validators = require('../util/Validators');
+const Validators = require('../util/Validators');
 /**
  * Representing the new user information.
  */
@@ -13,14 +13,15 @@ class RegisterDTO {
    *                                It should follow the following format YYYYMMDD-XXXX.
    * @param {string} email The email address of the new user .
    * @param {string} username The username that the new user chose for login.
-   * @param {string} password The password that the new user chose for login.
+   * @param {string} password The password that the new user chose for login. Must be 8 minimum characters and 32 maximum characters.
    */
     constructor(firstName, lastName, personalNumber, email, username, password) {
-        // Validators.isAlphaString(firstName, 'First name');
-        // Validators.isAlphaString(lastName, 'Last name');
-        // Validators.isPersonalNumberFormat(personalNumber, 'Personal number');
-        // Validators.isEmailFormat(email, 'Email');
-        // Validators.isAlphanumericString(username, 'Username');
+        Validators.isAlphaString(firstName, 'First Name');
+        Validators.isAlphaString(lastName, 'Last Name');
+        Validators.isPersonalNumberFormat(personalNumber, 'Personal Number');
+        Validators.isEmailFormat(email, 'Email');
+        Validators.isAlphanumericString(username, 'Username');
+        Validators.isPassword(password, 'Password');
         this.firstName = firstName;
         this.lastName = lastName;
         this.personalNumber = personalNumber;

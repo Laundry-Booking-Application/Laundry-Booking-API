@@ -17,6 +17,7 @@ const userInfoStatusCodes = require('../util/userInfoStatusCodes');
 const bookingStatusCodes = require('../util/bookingStatusCodes');
 const scheduleStatusCodes = require('../util/scheduleStatusCodes');
 const slotStatusEnum = require('../util/slotStatusEnum');
+const emptyParamEnum = require('../util/emptyParamEnum');
 const PersonInfo = require('./PersonInfo');
 
 /**
@@ -220,11 +221,11 @@ class LaundryDAO {
             const personInfo = await this._getPersonInfo(username);
 
             if (personInfo === null) {
-                return new UserInfoDTO([], userInfoStatusCodes.InvalidUser);
+                return new UserInfoDTO(emptyParamEnum.PersonInfo, userInfoStatusCodes.InvalidUser);
             }
 
             if (personInfo.privilegeID !== privilegeEnum.Administrator) {
-                return new UserInfoDTO([], userInfoStatusCodes.InvalidPrivilege);
+                return new UserInfoDTO(emptyParamEnum.PersonInfo, userInfoStatusCodes.InvalidPrivilege);
             }
 
             const getUsersQuery = {
@@ -345,24 +346,27 @@ class LaundryDAO {
             const personInfo = await this._getPersonInfo(username);
 
             if (!checkWeek) {
-                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidWeek);
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                    emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidWeek);
             }
 
             if (personInfo === null) {
-                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidUser);
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                    emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidUser);
             }
 
             if (personInfo.privilegeID !== privilegeEnum.Standard && personInfo.privilegeID !== privilegeEnum.Administrator) {
-                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidPrivilege);
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                    emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidPrivilege);
             }
 
             let passesSchedule = await this._getPassesSchedule(weekCorrection);
             const userBooking = await this.getBookedPass(username);
-            
+
             if (passesSchedule === null) {
                 return null;
             }
-            
+
             const bookingParam = [{date: userBooking.date, room: userBooking.roomNumber, range: userBooking.passRange}];
             await this._fillPassSchedule(passesSchedule, bookingParam, slotStatusEnum.SelfBooking);
 
@@ -396,11 +400,13 @@ class LaundryDAO {
             const weekCorrection = week + 1;
 
             if (personInfo === null) {
-                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidUser);
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                    emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidUser);
             }
 
             if (personInfo.privilegeID !== privilegeEnum.Administrator) {
-                return new PassScheduleDTO('', '', '', scheduleStatusCodes.InvalidPrivilege);
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                    emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidPrivilege);
             }
 
             let passesSchedule = await this._getPassesSchedule(weekCorrection);
@@ -543,7 +549,6 @@ class LaundryDAO {
             }
 
             return new PassScheduleDTO(week, passSchedule.length, roomPasses);
-
         } catch (err) {
             throw err;
         }
@@ -829,15 +834,18 @@ class LaundryDAO {
             const passScheduleID = await this._getPassInfo(roomNumber, passRange);
 
             if (currentWeek > dateWeek || dateWeek > (currentWeek + 1)) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidDate);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.InvalidDate);
             }
 
             if (personInfo === null) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidUser);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.InvalidUser);
             }
 
             if (passScheduleID === -1) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidPassInfo);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.InvalidPassInfo);
             }
 
             const { startMonthDate, endMonthDate } = await this._monthStartAndEndDate(dateMonth);
@@ -848,19 +856,23 @@ class LaundryDAO {
             const periodBookedPasses = await this._getPeriodBookedPasses(personInfo.accountID, startMonthDate, endMonthDate);
 
             if (bookedPassID !== -1) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.BookedPass);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.BookedPass);
             }
 
             if (lockOwnerID !== personInfo.accountID && lockOwnerID !== -1) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.LockedPass);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.LockedPass);
             }
 
             if (activePassesCount >= this.activePassesAllowed) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.ExistentActivePass);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.ExistentActivePass);
             }
 
             if (periodBookedPasses >= this.totalMonthPassesAllowed) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.PassCountExceeded);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.PassCountExceeded);
             }
 
             await this._executeQuery('BEGIN');
@@ -935,7 +947,8 @@ class LaundryDAO {
             const personInfo = await this._getPersonInfo(username);
 
             if (personInfo === null) {
-                return new BookingDTO('', 0, '', bookingStatusCodes.InvalidUser);
+                return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.InvalidUser);
             }
 
             const getBookingQuery = {
@@ -957,7 +970,8 @@ class LaundryDAO {
             if (results.rowCount > 0) {
                 retValue = new BookingDTO(results.rows[0].date, results.rows[0].room, results.rows[0].range, bookingStatusCodes.OK);
             } else {
-                retValue = new BookingDTO('', 0, '', bookingStatusCodes.NoBooking);
+                retValue = new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                    emptyParamEnum.PassRange, bookingStatusCodes.NoBooking);
             }
 
             await this._executeQuery('COMMIT');
@@ -1018,7 +1032,7 @@ class LaundryDAO {
 
             if (results.rowCount > 0) {
                 retValue = true;
-            } 
+            }
             await this._executeQuery('COMMIT');
 
             return retValue;
@@ -1092,6 +1106,34 @@ class LaundryDAO {
     async _verifyPasswordHash(plainPassword, passwordHash) {
         const result = await bcrypt.compare(plainPassword, passwordHash);
         return result;
+    }
+
+    // eslint-disable-next-line require-jsdoc
+    async _deleteOldBookings(date) {
+        const getInfoQuery = {
+            text: `DELETE FROM public.pass_booking
+            WHERE     pass_booking.date <= $1`,
+            values: [date],
+        };
+
+        try {
+            let retValue = false;
+
+            await this._executeQuery('BEGIN');
+
+            const results = await this._executeQuery(getInfoQuery);
+
+            if (results.rowCount > 0) {
+                retValue = true;
+            }
+
+            await this._executeQuery('COMMIT');
+
+            return retValue;
+        } catch (err) {
+            this.logger.logException(err);
+            return null;
+        }
     }
 }
 

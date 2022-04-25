@@ -1,6 +1,6 @@
 'use strict';
 
-// const Validators = require('../util/Validators');
+const Validators = require('../util/Validators');
 /**
  * Representing the result of the booking.
  */
@@ -14,6 +14,10 @@ class BookingDTO {
      *                         The codes can be found in the bookingStatusCodes.js
      */
     constructor(date, roomNumber, passRange, statusCode) {
+        Validators.isDateFormat(date, 'Date');
+        Validators.isNonNegativeNumber(roomNumber, 'Room Number');
+        Validators.isPassRange(passRange, 'Pass Range');
+        Validators.isNonNegativeNumber(statusCode, 'Status Code');
         this.date = date;
         this.roomNumber = roomNumber;
         this.passRange = passRange;
