@@ -1,6 +1,6 @@
 'use strict';
 
-const { check, validationResult } = require('express-validator');
+const { body, validationResult } = require('express-validator');
 const RequestHandler = require('./RequestHandler');
 const Validators = require('../../util/Validators');
 const userStatusCodes = require('../../util/userStatusCodes');
@@ -56,8 +56,8 @@ class UserApi extends RequestHandler {
              */
             this.router.post(
                 '/login',
-                check('username').isAlphanumeric(),
-                check('password').isLength({ min: 8, max: 32 }),
+                body('username').isAlphanumeric(),
+                body('password').isLength({ min: 8, max: 32 }),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);
@@ -108,17 +108,17 @@ class UserApi extends RequestHandler {
              */
             this.router.post(
                 '/registerResident',
-                check('firstname').isAlpha(),
-                check('lastname').isAlpha(),
-                check('personalNumber').custom((value) => {
+                body('firstname').isAlpha(),
+                body('lastname').isAlpha(),
+                body('personalNumber').custom((value) => {
                     // This will throw an AssertionError if the validation fails
                     Validators.isPersonalNumberFormat(value, 'personalNumber');
                     // Indicates the success of the custom validator check
                     return true;
                 }),
-                check('email').normalizeEmail().isEmail(),
-                check('username').isAlphanumeric(),
-                check('password').isLength({ min: 8, max: 32 }),
+                body('email').normalizeEmail().isEmail(),
+                body('username').isAlphanumeric(),
+                body('password').isLength({ min: 8, max: 32 }),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);
@@ -195,6 +195,7 @@ class UserApi extends RequestHandler {
              * Errors caused by database related issues, are handled by the
              * {UserErrorHandler}.
              *
+             * parameter username The username of the account to be removed.
              * Sends   200: If the request contained a valid authentication cookie, the response body
              *              contains the deletion operation result.
              *         400: If the request body did not contain properly formatted fields.
@@ -202,7 +203,7 @@ class UserApi extends RequestHandler {
              */
             this.router.post(
                 '/deleteUser',
-                check('username').isAlpha(),
+                body('username').isAlpha(),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);

@@ -330,7 +330,8 @@ class LaundryDAO {
     }
 
     /**
-     * Get the passes schedule for the week. Resident is allowed to see the bookings of one week before and after the current one.
+     * Get the passes schedule for the week. 
+     * Residents are allowed to see the bookings of one week before and after the current one.
      * @param {string} username The username related to the person.
      * @param {int} week The specific week to get the passes related to the week dates.
      * @returns {PassScheduleDTO | null} An object with All the bookings for a specific week.
@@ -382,7 +383,8 @@ class LaundryDAO {
     }
 
     /**
-     * Get the passes schedule for the week with all the username related to the bookings. Can be only used by an administrator.
+     * Get the passes schedule for the week with all the username related to the bookings. 
+     * Can be only used by an administrator.
      * @param {string} username The username related to the person.
      * @param {int} week The specific week to get the passes related to the week dates.
      * @returns {PassScheduleDTO | null} An object with All the bookings for a specific week.
