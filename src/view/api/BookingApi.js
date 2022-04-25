@@ -68,7 +68,12 @@ class BookingApi extends RequestHandler {
                     // Indicates the success of the custom validator check
                     return true;
                 }),
-                body('passRange').isString(),
+                body('passRange').custom((value) => {
+                    // This will throw an AssertionError if the validation fails
+                    Validators.isPassRange(value, 'passRange');
+                    // Indicates the success of the custom validator check
+                    return true;
+                }),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);
@@ -164,7 +169,12 @@ class BookingApi extends RequestHandler {
                     // Indicates the success of the custom validator check
                     return true;
                 }),
-                body('passRange').isString(),
+                body('passRange').custom((value) => {
+                    // This will throw an AssertionError if the validation fails
+                    Validators.isPassRange(value, 'passRange');
+                    // Indicates the success of the custom validator check
+                    return true;
+                }),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);
@@ -296,7 +306,12 @@ class BookingApi extends RequestHandler {
                     // Indicates the success of the custom validator check
                     return true;
                 }),
-                body('passRange').isString(),
+                body('passRange').custom((value) => {
+                    // This will throw an AssertionError if the validation fails
+                    Validators.isPassRange(value, 'passRange');
+                    // Indicates the success of the custom validator check
+                    return true;
+                }),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);

@@ -203,7 +203,7 @@ class UserApi extends RequestHandler {
              */
             this.router.post(
                 '/deleteUser',
-                body('username').isAlpha(),
+                body('username').isAlphanumeric(),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);
