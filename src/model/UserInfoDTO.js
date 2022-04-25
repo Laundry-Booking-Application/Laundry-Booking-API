@@ -1,6 +1,6 @@
 'use strict';
 
-// const Validators = require('../util/Validators');
+const Validators = require('../util/Validators');
 /**
  * Represent the information about the person.
  */
@@ -16,6 +16,8 @@ class UserInfoDTO {
                               which can be found in the userInfoStatusCodes.js.
    */
     constructor(personInfo, statusCode) {
+        personInfo.forEach(person => Validators.isPersonInfo(person, 'Person Info'));
+        Validators.isNonNegativeNumber(statusCode, 'Status Code');
         this.personInfo = personInfo;
         this.statusCode = statusCode;
     }

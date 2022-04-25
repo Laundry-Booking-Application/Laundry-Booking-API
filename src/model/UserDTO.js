@@ -1,6 +1,6 @@
 'use strict';
 
-// const Validators = require('../util/Validators');
+const Validators = require('../util/Validators');
 
 /**
  * Representing logged-in user data transfer object.
@@ -15,8 +15,9 @@ class UserDTO {
      *                         which can be found in the userStatusCodes.js. 
      */
     constructor(username, privilegeID, statusCode) {
-        // Validators.isAlphanumericString(username, 'username');
-        // Validators.isIntegerBetween(roleID, 0, 2, 'privilegeID');
+        Validators.isAlphanumericString(username, 'Username');
+        Validators.isIntegerBetween(privilegeID, 0, 2, 'Privilege ID');
+        Validators.isNonNegativeNumber(statusCode, 'Status Code');
         this.username = username;
         this.privilegeID = privilegeID;
         this.statusCode = statusCode;

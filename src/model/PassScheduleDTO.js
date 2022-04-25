@@ -1,6 +1,6 @@
 'use strict';
 
-// const Validators = require('../util/Validators');
+const Validators = require('../util/Validators');
 
 /**
  * Represent the schedule of the laundry bookings for a specific week.
@@ -17,6 +17,10 @@
      *                         which can be found in the scheduleStatusCodes.js.
      */
     constructor(weekNumber, roomCount, roomPasses, statusCode) {
+        Validators.isNonNegativeNumber(weekNumber, 'Week Number');
+        Validators.isNonNegativeNumber(roomCount, 'Room Count');
+        roomPasses.forEach(roomPass => Validators.isNonNegativeNumber(roomPass.roomNum, 'Room Number'));
+        Validators.isNonNegativeNumber(statusCode, 'Status Code');
         this.weekNumber = weekNumber;
         this.roomCount = roomCount;
         this.roomPasses = roomPasses;
