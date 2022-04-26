@@ -89,7 +89,7 @@ class UserApi extends RequestHandler {
             /**
              * Registers a resident account.
              * All the fields received in the request are validated.
-             * This endpoint is only accessible by Administrators.
+             * This endpoint is only accessible by administrators.
              * Errors caused by database related issues, are handled by the
              * {UserErrorHandler}.
              *
@@ -157,7 +157,7 @@ class UserApi extends RequestHandler {
 
             /**
              * Lists all registered resident account information.
-             * This endpoint is only accessible by Administrators.
+             * This endpoint is only accessible by administrators.
              * Errors caused by database related issues, are handled by the
              * {UserErrorHandler}.
              *
@@ -191,7 +191,7 @@ class UserApi extends RequestHandler {
 
             /**
              * Deletes all information about the specified user and removes the user from the system.
-             * This endpoint is only accessible by Administrators.
+             * This endpoint is only accessible by administrators.
              * Errors caused by database related issues, are handled by the
              * {UserErrorHandler}.
              *

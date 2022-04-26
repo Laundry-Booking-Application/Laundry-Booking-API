@@ -113,8 +113,8 @@ class Controller {
     *
     * @param {String} issuerUsername The username of the user that issued the request.
     *                                The user that issued the request must be a 'Standard' user.
-    * @param {int} roomNumber The number related to the room chosen.
-    * @param {string} date The date that the pass is going to be.
+    * @param {int} roomNumber The number related to the chosen room.
+    * @param {string} date The date of the laundry pass.
     * @param {string} passRange The time frame that the pass has.
     * @returns {boolean | null} true or false to give a confirmation of the locking attempt, 
     *                           or null in case of an error while contacting the database. 
@@ -149,7 +149,7 @@ class Controller {
     *
     * @param {String} issuerUsername The username of the user that issued the request.
     *                                The user that issued the request must be a 'Standard' user.
-    * @param {int} roomNumber The number related to the room chosen.
+    * @param {int} roomNumber The number related to the chosen room.
     * @param {string} date The date of the laundry pass.
     * @param {string} passRange The time frame that the pass has.
     * @returns {BookingDTO | null} The booking attempt result {BookingDTO}, 
