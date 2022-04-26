@@ -2,7 +2,7 @@
 
 const express = require('express');
 const Controller = require('../../controller/Controller');
-const Validators = require('../util/Validators');
+const Validators = require('../../util/Validators');
 const Logger = require('../../util/Logger');
 
 /**
