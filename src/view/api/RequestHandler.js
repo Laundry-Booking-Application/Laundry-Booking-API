@@ -2,7 +2,7 @@
 
 const express = require('express');
 const Controller = require('../../controller/Controller');
-// const Validators = require('../util/Validators');
+const Validators = require('../util/Validators');
 const Logger = require('../../util/Logger');
 
 /**
@@ -42,7 +42,7 @@ class RequestHandler {
      * @param {any} body The body of the response.
      */
     sendHttpResponse(res, status, body) {
-        // Validators.isIntegerBetween(status, 200, 503, 'status code');
+        Validators.isIntegerBetween(status, 200, 503, 'status code');
         if (body === undefined) {
             res.status(status).end();
             return;
