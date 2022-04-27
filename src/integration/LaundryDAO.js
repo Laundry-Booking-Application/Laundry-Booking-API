@@ -538,7 +538,7 @@ class LaundryDAO {
                         slots[slotCounter] = {
                             range: passSchedule[roomCounter].slots[slotCounter],
                             status: slotStatusEnum.Available,
-                            username: ''
+                            username: emptyParamEnum.Username
                         };
                     }
 
@@ -548,7 +548,7 @@ class LaundryDAO {
                 roomPasses[roomCounter] = { roomNum: passSchedule[roomCounter].room, passes: roomPass };
             }
 
-            return new PassScheduleDTO(week, passSchedule.length, roomPasses);
+            return new PassScheduleDTO(week, passSchedule.length, weekDate[0], weekDate[weekDate.length - 1], roomPasses, bookingStatusCodes.OK);
         } catch (err) {
             throw err;
         }
