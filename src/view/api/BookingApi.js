@@ -46,8 +46,8 @@ class BookingApi extends RequestHandler {
              * Errors caused by database related issues, are handled by the
              * {BookingErrorHandler}.
              * 
-             * parameter roomNumber The number related to the room chosen.
-             * parameter date The date that the pass is going to be.
+             * parameter roomNumber The number related to the chosen room.
+             * parameter date The date of the laundry pass.
              * parameter passRange The time frame that the pass has.
              * Sends   200: If the request contained a valid authentication cookie, the response body
              *              contains the locking operation result.
@@ -146,8 +146,8 @@ class BookingApi extends RequestHandler {
              * Errors caused by database related issues, are handled by the
              * {BookingErrorHandler}.
              *
-             * parameter roomNumber The number related to the room chosen.
-             * parameter date The date that the pass is going to be.
+             * parameter roomNumber The number related to the chosen room.
+             * parameter date The date of the laundry pass.
              * parameter passRange The time frame that the pass has.
              * Sends   200: If the request contained a valid authentication cookie, the response body
              *              contains the booking operation result {BookingDTO}.
@@ -246,7 +246,7 @@ class BookingApi extends RequestHandler {
              *         400: if there was no active booking.
              *         401: If the authentication cookie was missing or invalid.
              */
-            this.router.post(
+            this.router.get(
                 '/getBookedPass',
                 async (req, res, next) => {
                     try {
@@ -284,8 +284,8 @@ class BookingApi extends RequestHandler {
              * Errors caused by database related issues, are handled by the
              * {BookingErrorHandler}.
              *
-             * parameter roomNumber The number related to the room chosen.
-             * parameter date The date that the pass is going to be.
+             * parameter roomNumber The number related to the chosen room.
+             * parameter date The date of the laundry pass.
              * parameter passRange The time frame that the pass has.
              * Sends   200: If the request contained a valid authentication cookie, the response body
              *              contains the booking cancellation result.
@@ -404,7 +404,7 @@ class BookingApi extends RequestHandler {
 
             /**
              * Fetches the passes' schedule for the specified week including the usernames related to the bookings.
-             * This endpoint is only accessible by administrator.
+             * This endpoint is only accessible by administrators.
              * Errors caused by database related issues, are handled by the
              * {BookingErrorHandler}.
              *

@@ -603,8 +603,8 @@ class LaundryDAO {
     /**
      * Lock the pass slot temporarily for an amount of time to allow the user to confirm their choice.
      * @param {string} username The username that is related to the user.
-     * @param {int} roomNumber The number related to the room chosen.
-     * @param {string} date The date that the pass is going to be.
+     * @param {int} roomNumber The number related to the chosen room.
+     * @param {string} date The date of the laundry pass.
      * @param {string} passRange The time frame that the pass have.
      * @returns {boolean | null} true or false to give a confirmation of the locking.
      *                           null indicates that something went wrong and it gets logged.
@@ -820,7 +820,7 @@ class LaundryDAO {
      * Book the chosen pass for the user.
      * @param {string} username The username related to the person.
      * @param {int} roomNumber The number related to the room.
-     * @param {string} date The date that the pass is going to be.
+     * @param {string} date The date of the laundry pass.
      * @param {string} passRange The time frame that the pass have.
      * @returns {BookingDTO | null} An object that has the result of the booking result.
      *                              null indicates that something went wrong and it gets logged.
