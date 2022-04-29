@@ -990,7 +990,7 @@ class LaundryDAO {
                         INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
                 WHERE	pass_booking.account_id = $1 AND
                         pass_booking.date >= CURRENT_DATE AND
-                        SUBSTRING(pass.range, 3,5)::INT >= EXTRACT('HOUR' FROM NOW())`,
+                        SUBSTRING(pass.range, 4,5)::INT >= EXTRACT('HOUR' FROM NOW())`,
                 values: [personInfo.accountID],
             };
 
