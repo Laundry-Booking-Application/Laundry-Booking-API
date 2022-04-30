@@ -1,6 +1,6 @@
 'use strict';
 
-const { body, validationResult } = require('express-validator');
+const {body, validationResult} = require('express-validator');
 const RequestHandler = require('./RequestHandler');
 const Validators = require('../../util/Validators');
 const userStatusCodes = require('../../util/userStatusCodes');
@@ -57,7 +57,7 @@ class UserApi extends RequestHandler {
             this.router.post(
                 '/login',
                 body('username').isAlphanumeric(),
-                body('password').isLength({ min: 8, max: 32 }),
+                body('password').isLength({min: 8, max: 32}),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);
@@ -100,7 +100,7 @@ class UserApi extends RequestHandler {
              * parameter email The email address of the new resident account.
              * parameter username The username of the new resident account.
              * parameter password The password of the new resident account
-             *                     and must have a minimum length of eight and 
+             *                     and must have a minimum length of eight and
              *                     a maximum length of thirty two characters.
              * Sends   200: If the user was successfully registered, and returns {UserDTO}
              *         400: If the request body did not contain properly formatted fields.
@@ -118,7 +118,7 @@ class UserApi extends RequestHandler {
                 }),
                 body('email').normalizeEmail().isEmail(),
                 body('username').isAlphanumeric(),
-                body('password').isLength({ min: 8, max: 32 }),
+                body('password').isLength({min: 8, max: 32}),
                 async (req, res, next) => {
                     try {
                         const errors = validationResult(req);
@@ -130,8 +130,7 @@ class UserApi extends RequestHandler {
                         if (loggedInUserDTO === null) {
                             this.sendHttpResponse(res, 401, 'Missing or invalid authorization cookie.');
                             return;
-                        }
-                        else {
+                        } else {
                             const registeredUserDTO = await this.controller.registerResident(loggedInUserDTO.username, req.body.firstname, req.body.lastname,
                                 req.body.personalNumber, req.body.email, req.body.username, req.body.password);
                             if (registeredUserDTO === null) {
@@ -177,8 +176,7 @@ class UserApi extends RequestHandler {
                             const userInfoDTO = await this.controller.listUsers(loggedInUserDTO.username);
                             if (userInfoDTO === null) {
                                 throw new Error('Expected UserInfoDTO object, received null.');
-                            }
-                            else {
+                            } else {
                                 this.sendHttpResponse(res, 200, userInfoDTO);
                                 return;
                             }
@@ -219,9 +217,8 @@ class UserApi extends RequestHandler {
                             const result = await this.controller.deleteUser(loggedInUserDTO.username, req.body.username);
                             if (result === null) {
                                 throw new Error('Expected operation result boolean, received null.');
-                            }
-                            else {
-                                const resultObject = { 'result': result }
+                            } else {
+                                const resultObject = {'result': result};
                                 this.sendHttpResponse(res, 200, resultObject);
                                 return;
                             }
@@ -275,7 +272,6 @@ class UserApi extends RequestHandler {
                     }
                 },
             );
-
         } catch (err) {
             this.logger.logException(err);
         }

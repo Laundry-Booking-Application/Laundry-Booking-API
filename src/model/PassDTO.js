@@ -5,7 +5,7 @@ const Validators = require('../util/Validators');
 /**
  * Represent the pass slot information for a specific day.
  */
- class PassDTO {
+class PassDTO {
     /**
      * Create an instance with the pass slot information.
      * @param {string} date The date that the pass is going to be.
@@ -16,7 +16,7 @@ const Validators = require('../util/Validators');
      */
     constructor(date, slots) {
         Validators.isDateFormat(date, 'Date');
-        slots.forEach(slot => Validators.isPassSlot(slot, 'Slot'));
+        slots.forEach((slot) => Validators.isPassSlot(slot, 'Slot'));
         this.date = date;
         this.slots = slots;
     }

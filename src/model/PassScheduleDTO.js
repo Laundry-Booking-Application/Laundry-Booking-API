@@ -5,7 +5,7 @@ const Validators = require('../util/Validators');
 /**
  * Represent the schedule of the laundry bookings for a specific week.
  */
- class PassScheduleDTO {
+class PassScheduleDTO {
     /**
      * Create an instance of the week schedule.
      * @param {int} weekNumber The week number for the schedule.
@@ -17,15 +17,15 @@ const Validators = require('../util/Validators');
      * @param {int} statusCode The code that represent the status of the information,
      *                         which can be found in the scheduleStatusCodes.js.
      */
-    constructor(weekNumber, roomCount, weekDates,roomPasses, statusCode) {
+    constructor(weekNumber, roomCount, weekDates, roomPasses, statusCode) {
         Validators.isNonNegativeNumber(weekNumber, 'Week Number');
         Validators.isNonNegativeNumber(roomCount, 'Room Count');
-		weekDates.forEach(weekDate => Validators.isDateFormat(weekDate, 'Week Date'));
-        roomPasses.forEach(roomPass => Validators.isNonNegativeNumber(roomPass.roomNum, 'Room Number'));
+        weekDates.forEach((weekDate) => Validators.isDateFormat(weekDate, 'Week Date'));
+        roomPasses.forEach((roomPass) => Validators.isNonNegativeNumber(roomPass.roomNum, 'Room Number'));
         Validators.isNonNegativeNumber(statusCode, 'Status Code');
         this.weekNumber = weekNumber;
         this.roomCount = roomCount;
-		this.weekDates = weekDates;
+        this.weekDates = weekDates;
         this.roomPasses = roomPasses;
         this.statusCode = statusCode;
     }

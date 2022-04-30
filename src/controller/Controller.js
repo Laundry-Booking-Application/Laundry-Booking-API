@@ -1,6 +1,5 @@
 'use strict';
 const LaundryDAO = require('../integration/LaundryDAO');
-const UserDTO = require('../model/UserDTO');
 const RegisterDTO = require('../model/RegisterDTO');
 
 /**
@@ -8,7 +7,6 @@ const RegisterDTO = require('../model/RegisterDTO');
  * Only this class should communicate with the model and integration layers.
  */
 class Controller {
-
     /**
      * Constructs an instance of {Controller}.
      * Also creates an instance of the {LaundryDAO}.
@@ -47,7 +45,7 @@ class Controller {
     }
 
     /**
-     * Registers a resident account. 
+     * Registers a resident account.
      * This method issues a call to the registerNewResident method in the {LaundryDAO},
      * which either returns a {UserDTO} with the result of the registration or null in case of an error
      * while contacting the database.
@@ -71,7 +69,7 @@ class Controller {
     }
 
     /**
-    * Lists all registered resident users. 
+    * Lists all registered resident users.
     * This method issues a call to the listUsers method in the {LaundryDAO},
     * which either returns a {UserInfoDTO} or null in case of an error
     * while contacting the database.
@@ -89,14 +87,14 @@ class Controller {
     /**
     * Deletes all information about the specified user and removes the user from the system.
     * This method issues a call to the deleteUser method in the {LaundryDAO},
-    * which either returns true in case of success or false in case of an error 
+    * which either returns true in case of success or false in case of an error
     * while processing the operation, or null if an error occurs while contacting the database.
     *
     * @param {String} issuerUsername The username of the user that issued the request.
     *                                The user that issued the request must be an administrator.
     * @param {String} userToBeRemoved The username of the user that is to be removed from the system.
     * @return {boolean | null} The deletion operation result, true in case of success, false in case of failure
-    *                          or null in case of an error while contacting the database.                     
+    *                          or null in case of an error while contacting the database.
     */
     async deleteUser(issuerUsername, userToBeRemoved) {
         const result = await this.laundryDAO.deleteUser(issuerUsername, userToBeRemoved);
@@ -105,10 +103,10 @@ class Controller {
 
 
     /**
-    * Temporarily locks a specific laundry pass slot for an amount of time 
+    * Temporarily locks a specific laundry pass slot for an amount of time
     * to allow the user to confirm their choice.
     * This method issues a call to the lockPass method in the {LaundryDAO},
-    * which either returns true in case of success or false in case of an error 
+    * which either returns true in case of success or false in case of an error
     * while processing the operation, or null if an error occurs while contacting the database.
     *
     * @param {String} issuerUsername The username of the user that issued the request.
@@ -116,8 +114,8 @@ class Controller {
     * @param {int} roomNumber The number related to the chosen room.
     * @param {string} date The date of the laundry pass.
     * @param {string} passRange The time frame that the pass has.
-    * @returns {boolean | null} true or false to give a confirmation of the locking attempt, 
-    *                           or null in case of an error while contacting the database. 
+    * @return {boolean | null} true or false to give a confirmation of the locking attempt,
+    *                           or null in case of an error while contacting the database.
     */
     async lockPass(issuerUsername, roomNumber, date, passRange) {
         const result = await this.laundryDAO.lockPass(issuerUsername, roomNumber, date, passRange);
@@ -128,13 +126,13 @@ class Controller {
     /**
     * Unlocks the temporarily locked laundry pass slot that the user had.
     * This method issues a call to the unlockPass method in the {LaundryDAO},
-    * which either returns true in case of success or false in case of an error 
+    * which either returns true in case of success or false in case of an error
     * while processing the operation, or null if an error occurs while contacting the database.
     *
     * @param {String} issuerUsername The username of the user that issued the request.
     *                                The user that issued the request must be a 'Standard' user.
-    * @returns {boolean | null} true or false to give a confirmation of the unlocking attempt, 
-    *                           or null in case of an error while contacting the database. 
+    * @return {boolean | null} true or false to give a confirmation of the unlocking attempt,
+    *                           or null in case of an error while contacting the database.
     */
     async unlockPass(issuerUsername) {
         const result = await this.laundryDAO.unlockPass(issuerUsername);
@@ -152,8 +150,8 @@ class Controller {
     * @param {int} roomNumber The number related to the chosen room.
     * @param {string} date The date of the laundry pass.
     * @param {string} passRange The time frame that the pass has.
-    * @returns {BookingDTO | null} The booking attempt result {BookingDTO}, 
-    *                              or null in case of an error while contacting the database. 
+    * @return {BookingDTO | null} The booking attempt result {BookingDTO},
+    *                              or null in case of an error while contacting the database.
     */
     async bookPass(issuerUsername, roomNumber, date, passRange) {
         const bookingDTO = await this.laundryDAO.bookPass(issuerUsername, roomNumber, date, passRange);
@@ -168,8 +166,8 @@ class Controller {
     *
     * @param {String} username The username related to the user.
     *                          The user that issued the request must be an authenticated user.
-    * @returns {BookingDTO | null} A {BookingDTO} containing the booking information, 
-    *                              or null in case of an error while contacting the database. 
+    * @return {BookingDTO | null} A {BookingDTO} containing the booking information,
+    *                              or null in case of an error while contacting the database.
     */
     async getBookedPass(username) {
         const bookingDTO = await this.laundryDAO.getBookedPass(username);
@@ -188,8 +186,8 @@ class Controller {
     * @param {int} roomNumber The laundry room number.
     * @param {string} date The date that the active laundry pass is booked on.
     * @param {string} passRange The time frame that the pass has.
-    * @returns {boolean | null} true or false to indicate whether the pass was cancelled or not, 
-    *                           or null in case of an error while contacting the database. 
+    * @return {boolean | null} true or false to indicate whether the pass was cancelled or not,
+    *                           or null in case of an error while contacting the database.
     */
     async cancelBookedPass(issuerUsername, roomNumber, date, passRange) {
         const cancellationResult = await this.laundryDAO.cancelBookedPass(issuerUsername, roomNumber, date, passRange);
@@ -207,8 +205,8 @@ class Controller {
     *                                The user that issued the request must be an authenticated user.
     * @param {int} week The requested week to get the laundry passes' schedule for.
     *                   Accepted values are -1, 0 and 1 for previous, current and next week respectively.
-    * @returns {PassScheduleDTO | null} A {PassScheduleDTO} containing the bookings for the specified week,
-    *                                   or null in case of an error while contacting the database. 
+    * @return {PassScheduleDTO | null} A {PassScheduleDTO} containing the bookings for the specified week,
+    *                                   or null in case of an error while contacting the database.
     */
     async getResidentPasses(issuerUsername, week) {
         const currentWeekNumber = await this.laundryDAO.getWeekNumber();
@@ -228,8 +226,8 @@ class Controller {
     *                                The user that issued the request must be an administrator.
     * @param {int} week The requested week to get the laundry passes' schedule for.
     *                   This parameter is relative to the current week, e.g. -2 is two weeks before the current week.
-    * @returns {PassScheduleDTO | null} A {PassScheduleDTO} containing the bookings for the specified week,
-    *                                   or null in case of an error while contacting the database. 
+    * @return {PassScheduleDTO | null} A {PassScheduleDTO} containing the bookings for the specified week,
+    *                                   or null in case of an error while contacting the database.
     */
     async getPasses(issuerUsername, week) {
         const currentWeekNumber = await this.laundryDAO.getWeekNumber();
@@ -237,7 +235,6 @@ class Controller {
         const passScheduleDTO = await this.laundryDAO.getPasses(issuerUsername, requestedWeekNumber);
         return passScheduleDTO;
     }
-
 }
 
 module.exports = Controller;
