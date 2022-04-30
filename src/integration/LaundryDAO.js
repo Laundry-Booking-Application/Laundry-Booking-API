@@ -622,12 +622,13 @@ class LaundryDAO {
                 return false;
             }
 
+            const checkDate = await this._isCurrentDate(date);
             const checkRange = await this._checkRangeHour(passRange);
             const bookedPassID = await this._getBookedPassID(date, passScheduleID);
             const lockOwnerID = await this._getLockOwner(date, passScheduleID);
             const activePassesCount = await this._getActivePasses(personInfo.accountID, passRange);
             
-            if (!checkRange) {
+            if (!checkRange && checkDate) {
                 return false;
             }
 
@@ -859,15 +860,15 @@ class LaundryDAO {
                     emptyParamEnum.PassRange, bookingStatusCodes.InvalidPassInfo);
             }
 
+            const checkDate = await this._isCurrentDate(date);
             const checkRange = await this._checkRangeHour(passRange);
             const { startMonthDate, endMonthDate } = await this._monthStartAndEndDate(dateMonth);
-
             const bookedPassID = await this._getBookedPassID(date, passScheduleID);
             const lockOwnerID = await this._getLockOwner(date, passScheduleID);
             const activePassesCount = await this._getActivePasses(personInfo.accountID, passRange);
             const periodBookedPasses = await this._getPeriodBookedPasses(personInfo.accountID, startMonthDate, endMonthDate);
 
-            if (!checkRange) {
+            if (!checkRange && checkDate) {
                 return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
                     emptyParamEnum.PassRange, bookingStatusCodes.InvalidPassInfo);
             }
@@ -915,12 +916,27 @@ class LaundryDAO {
     }
 
     // eslint-disable-next-line require-jsdoc
+    async _isCurrentDate(date) {
+        try {
+            let currentDate = dayjs().$d.toISOString().substring(0,10);
+            
+            if (currentDate === date) {
+                return true;
+            }
+
+            return false;
+        } catch (err) {
+            throw err;
+        }
+    }
+
+    // eslint-disable-next-line require-jsdoc
     async _checkRangeHour(range) {
         try {
             let endHour = parseInt(range.substring(3,5));
             const currentHour = dayjs().hour();
-
-            if (endHour >= currentHour) {
+            
+            if (endHour > currentHour) {
                 return true;
             }
 
@@ -989,8 +1005,7 @@ class LaundryDAO {
                         INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
                         INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
                 WHERE	pass_booking.account_id = $1 AND
-                        pass_booking.date >= CURRENT_DATE AND
-                        SUBSTRING(pass.range, 4,5)::INT >= EXTRACT('HOUR' FROM NOW())`,
+                        pass_booking.date >= CURRENT_DATE`,
                 values: [personInfo.accountID],
             };
 
@@ -1001,7 +1016,15 @@ class LaundryDAO {
             let retValue;
 
             if (results.rowCount > 0) {
-                retValue = new BookingDTO(results.rows[0].date, results.rows[0].room, results.rows[0].range, bookingStatusCodes.OK);
+                const checkDate = await this._isCurrentDate(results.rows[0].date);
+                const checkRange = await this._checkRangeHour(results.rows[0].range);
+
+                if (checkDate && !checkRange) {
+                    retValue = new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
+                        emptyParamEnum.PassRange, bookingStatusCodes.InvalidPassInfo);
+                } else {
+                    retValue = new BookingDTO(results.rows[0].date, results.rows[0].room, results.rows[0].range, bookingStatusCodes.OK);
+                }
             } else {
                 retValue = new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
                     emptyParamEnum.PassRange, bookingStatusCodes.NoBooking);
@@ -1038,9 +1061,10 @@ class LaundryDAO {
                 return false;
             }
 			
+            const checkDate = await this._isCurrentDate(date);
             const checkRange = await this._checkRangeHour(passRange);
 
-            if (!checkRange && personInfo.privilegeID !== privilegeEnum.Administrator) {
+            if (checkDate && !checkRange && personInfo.privilegeID !== privilegeEnum.Administrator) {
                 return false;
             }
 			
