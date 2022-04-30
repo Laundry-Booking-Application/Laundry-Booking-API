@@ -1,6 +1,6 @@
 'use strict';
 
-const {Client, types} = require('pg');
+const { Client, types } = require('pg');
 const bcrypt = require('bcrypt');
 let dayjs = require('dayjs');
 let weekOfYear = require('dayjs/plugin/weekOfYear');
@@ -43,7 +43,7 @@ class LaundryDAO {
             connectionTimeoutMillis: 5000,
             statement_timeout: 4000,
             query_timeout: 4000,
-            ssl: {rejectUnauthorized: false},
+            ssl: { rejectUnauthorized: false },
         });
 
         this.logger = new Logger('LaundryDatabaseHandler');
@@ -367,7 +367,7 @@ class LaundryDAO {
                 return null;
             }
 
-            const bookingParam = [{date: userBooking.date, room: userBooking.roomNumber, range: userBooking.passRange}];
+            const bookingParam = [{ date: userBooking.date, room: userBooking.roomNumber, range: userBooking.passRange }];
             await this._fillPassSchedule(passesSchedule, bookingParam, slotStatusEnum.SelfBooking);
 
             passesSchedule.roomPasses.forEach(room => {
@@ -626,9 +626,9 @@ class LaundryDAO {
             const checkRange = await this._checkRangeHour(passRange);
             const bookedPassID = await this._getBookedPassID(date, passScheduleID);
             const lockOwnerID = await this._getLockOwner(date, passScheduleID);
-            const activePassesCount = await this._getActivePasses(personInfo.accountID, passRange);
-            
-            if (!checkRange && checkDate) {
+            const activePassesCount = await this._getActivePasses(personInfo.accountID);
+
+            if (checkDate && checkRange > 0) {
                 return false;
             }
 
@@ -729,27 +729,34 @@ class LaundryDAO {
     }
 
     // eslint-disable-next-line require-jsdoc
-    async _getActivePasses(accountID, range) {
+    async _getActivePasses(accountID) {
         try {
             const checkActivePassesQuery = {
-                text: `SELECT      COUNT(pass_booking.id) AS booking_count
-                FROM        pass_booking
-                INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
-                INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
-                WHERE       pass_booking.account_id = $1 AND
-                pass_booking.date >= CURRENT_DATE AND
-                pass.range >= $2 
-                GROUP BY    pass_booking.id`,
-                values: [accountID, range]
+                text: `SELECT	pass_booking.date, pass_schedule.room, pass.range
+                FROM	pass_booking
+                        INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
+                        INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
+                WHERE	pass_booking.account_id = $1 AND
+                        pass_booking.date >= CURRENT_DATE`,
+                values: [accountID]
             };
 
             let retValue = -1;
             await this._executeQuery('BEGIN');
 
-            const result = await this._executeQuery(checkActivePassesQuery);
+            const results = await this._executeQuery(checkActivePassesQuery);
 
-            if (result.rowCount > 0) {
-                retValue = result.rows[0].booking_count;
+            if (results.rowCount > 0) {
+                retValue = results.rowCount;
+
+                for (let booking = 0; booking < results.rowCount; booking++) {
+                    const checkDate = await this._isCurrentDate(results.rows[booking].date);
+                    const checkRange = await this._checkRangeHour(results.rows[booking].range);
+                    
+                    if (checkDate && checkRange === 0) {
+                        retValue -= 1;
+                    }
+                }
             }
 
             await this._executeQuery('COMMIT');
@@ -833,23 +840,23 @@ class LaundryDAO {
      */
     async bookPass(username, roomNumber, date, passRange) {
         try {
-			const currentDate = dayjs();
+            const currentDate = dayjs();
             const currentWeek = dayjs().week();
             const dateWeek = dayjs(date).week();
             const dateMonth = dayjs(date).month();
             const personInfo = await this._getPersonInfo(username);
             const passScheduleID = await this._getPassInfo(roomNumber, passRange);
-            
+
             if (currentWeek > dateWeek || dateWeek > (currentWeek + 1)) {
                 return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
                     emptyParamEnum.PassRange, bookingStatusCodes.InvalidDate);
             }
-			
-			if (date < currentDate.$d.toISOString().substring(0,10)) {
+
+            if (date < currentDate.$d.toISOString().substring(0, 10)) {
                 return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
                     emptyParamEnum.PassRange, bookingStatusCodes.InvalidDate);
             }
-			
+
             if (personInfo === null) {
                 return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
                     emptyParamEnum.PassRange, bookingStatusCodes.InvalidUser);
@@ -865,10 +872,10 @@ class LaundryDAO {
             const { startMonthDate, endMonthDate } = await this._monthStartAndEndDate(dateMonth);
             const bookedPassID = await this._getBookedPassID(date, passScheduleID);
             const lockOwnerID = await this._getLockOwner(date, passScheduleID);
-            const activePassesCount = await this._getActivePasses(personInfo.accountID, passRange);
+            const activePassesCount = await this._getActivePasses(personInfo.accountID);
             const periodBookedPasses = await this._getPeriodBookedPasses(personInfo.accountID, startMonthDate, endMonthDate);
 
-            if (!checkRange && checkDate) {
+            if (checkDate && checkRange > 0) {
                 return new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
                     emptyParamEnum.PassRange, bookingStatusCodes.InvalidPassInfo);
             }
@@ -918,8 +925,8 @@ class LaundryDAO {
     // eslint-disable-next-line require-jsdoc
     async _isCurrentDate(date) {
         try {
-            let currentDate = dayjs().$d.toISOString().substring(0,10);
-            
+            let currentDate = dayjs().$d.toISOString().substring(0, 10);
+
             if (currentDate === date) {
                 return true;
             }
@@ -933,14 +940,19 @@ class LaundryDAO {
     // eslint-disable-next-line require-jsdoc
     async _checkRangeHour(range) {
         try {
-            let endHour = parseInt(range.substring(3,5));
+            const startHour =  parseInt(range.substring(0, 3));
+            const endHour = parseInt(range.substring(3, 5));
             const currentHour = dayjs().hour();
             
-            if (endHour > currentHour) {
-                return true;
+            if (currentHour < startHour) {
+                return -1;
             }
 
-            return false;
+            if (currentHour > endHour) {
+                return 1;
+            }
+
+            return 0;
         } catch (err) {
             throw err;
         }
@@ -1018,10 +1030,10 @@ class LaundryDAO {
             if (results.rowCount > 0) {
                 const checkDate = await this._isCurrentDate(results.rows[0].date);
                 const checkRange = await this._checkRangeHour(results.rows[0].range);
-
-                if (checkDate && !checkRange) {
+                
+                if (checkDate && checkRange > 0) {
                     retValue = new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
-                        emptyParamEnum.PassRange, bookingStatusCodes.InvalidPassInfo);
+                    emptyParamEnum.PassRange, bookingStatusCodes.NoBooking);
                 } else {
                     retValue = new BookingDTO(results.rows[0].date, results.rows[0].room, results.rows[0].range, bookingStatusCodes.OK);
                 }
@@ -1056,18 +1068,18 @@ class LaundryDAO {
             if (personInfo === null) {
                 return false;
             }
-			
+
             if (passScheduleID === -1) {
                 return false;
             }
-			
+
             const checkDate = await this._isCurrentDate(date);
             const checkRange = await this._checkRangeHour(passRange);
 
-            if (checkDate && !checkRange && personInfo.privilegeID !== privilegeEnum.Administrator) {
+            if (checkDate && checkRange > 0 && personInfo.privilegeID !== privilegeEnum.Administrator) {
                 return false;
             }
-			
+
             const cancelBookingQuery = {
                 text: `DELETE FROM public.pass_booking
                 WHERE       pass_booking.date = $1 AND
