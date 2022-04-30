@@ -1,12 +1,11 @@
 'use strict';
 
-const { Client, types } = require('pg');
+const {Client, types} = require('pg');
 const bcrypt = require('bcrypt');
-let dayjs = require('dayjs');
-let weekOfYear = require('dayjs/plugin/weekOfYear');
+const dayjs = require('dayjs');
+const weekOfYear = require('dayjs/plugin/weekOfYear');
 const Logger = require('../util/Logger');
 const UserDTO = require('../model/UserDTO');
-const RegisterDTO = require('../model/RegisterDTO');
 const UserInfoDTO = require('../model/UserInfoDTO');
 const BookingDTO = require('../model/BookingDTO');
 const PassDTO = require('../model/PassDTO');
@@ -27,7 +26,7 @@ const PersonInfo = require('./PersonInfo');
 class LaundryDAO {
     /**
      * Create an instance of the database handler class that has the required credentials for database connectivity.
-     * It includes other components to disable node-postgres date auto parsing process. 
+     * It includes other components to disable node-postgres date auto parsing process.
      */
     constructor() {
         const dateObjectId = 1082;
@@ -43,7 +42,7 @@ class LaundryDAO {
             connectionTimeoutMillis: 5000,
             statement_timeout: 4000,
             query_timeout: 4000,
-            ssl: { rejectUnauthorized: false },
+            ssl: {rejectUnauthorized: false},
         });
 
         this.logger = new Logger('LaundryDatabaseHandler');
@@ -77,7 +76,7 @@ class LaundryDAO {
      * Try to login the user to their account if they exist or have the right info.
      * @param {string} username The username that is used by user to login into their account.
      * @param {string} password The password that is used by user to login into their account.
-     * @returns {UserDTO | null} An object that has the info about the login results.
+     * @return {UserDTO | null} An object that has the info about the login results.
      *                           null indicates that something went wrong and it gets logged.
      */
     async loginUser(username, password) {
@@ -120,7 +119,7 @@ class LaundryDAO {
      * Register new person into the database with all the required information.
      * @param {string} username The username of the admin to register new account.
      * @param {RegisterDTO} registerDTO Holds all the needed values about the registration information.
-     * @returns {UserDTO | null} An object that has the info about the login results.
+     * @return {UserDTO | null} An object that has the info about the login results.
      *                           null indicates that something went wrong and it gets logged.
      */
     async registerNewResident(username, registerDTO) {
@@ -194,7 +193,7 @@ class LaundryDAO {
                         FROM new_user)
                     ) RETURNING account.username, account.person_id`,
                     values: [registerDTO.firstName, registerDTO.lastName, registerDTO.personalNumber,
-                    registerDTO.email, privilege, registerDTO.username, passwordHash],
+                        registerDTO.email, privilege, registerDTO.username, passwordHash],
                 };
 
 
@@ -211,9 +210,9 @@ class LaundryDAO {
     }
 
     /**
-     * Get the list of users with their information. Note that only high privilege user can do list users. 
+     * Get the list of users with their information. Note that only high privilege user can do list users.
      * @param {string} username The username of the related user that initiated the request.
-     * @returns {UserInfoDTO | null} An array of objects that hold all the information about the results.
+     * @return {UserInfoDTO | null} An array of objects that hold all the information about the results.
      *                              null indicates that something went wrong and it gets logged.
      */
     async listUsers(username) {
@@ -239,18 +238,18 @@ class LaundryDAO {
 
             await this._executeQuery('BEGIN');
 
-            let retValue;
-            let userInfoList = [];
+
+            const userInfoList = [];
             const results = await this._executeQuery(getUsersQuery);
 
             for (let i = 0; i < results.rowCount; i++) {
                 userInfoList[i] = {
                     firstName: results.rows[i].firstname, lastName: results.rows[i].lastname,
-                    personalNumber: results.rows[i].personal_number, username: results.rows[i].username
-                }
+                    personalNumber: results.rows[i].personal_number, username: results.rows[i].username,
+                };
             }
 
-            retValue = new UserInfoDTO([...userInfoList], userInfoStatusCodes.OK);
+            const retValue = new UserInfoDTO([...userInfoList], userInfoStatusCodes.OK);
 
             await this._executeQuery('COMMIT');
 
@@ -265,7 +264,7 @@ class LaundryDAO {
      * Deletes all information about the specified user and removes the user from the system.
      * @param {string} username The username of the related user initiated the deleting process.
      * @param {string} userToBeRemoved The username of the user that it will be removed.
-     * @returns {boolean | null} true or false to give a confirmation of the deletion.
+     * @return {boolean | null} true or false to give a confirmation of the deletion.
      *                           null indicates that something went wrong and it gets logged.
      */
     async deleteUser(username, userToBeRemoved) {
@@ -305,9 +304,9 @@ class LaundryDAO {
 
             await this._executeQuery('BEGIN');
 
-            await this._executeQuery(deleteBookingQuery)
-            await this._executeQuery(deleteAccountQuery)
-            await this._executeQuery(deletePersonQuery)
+            await this._executeQuery(deleteBookingQuery);
+            await this._executeQuery(deleteAccountQuery);
+            await this._executeQuery(deletePersonQuery);
 
             await this._executeQuery('COMMIT');
 
@@ -320,7 +319,7 @@ class LaundryDAO {
 
     /**
      * Get the number corresponding to the current date.
-     * @returns {int} The number of the current week.
+     * @return {int} The number of the current week.
      */
     async getWeekNumber() {
         try {
@@ -331,11 +330,11 @@ class LaundryDAO {
     }
 
     /**
-     * Get the passes schedule for the week. 
+     * Get the passes schedule for the week.
      * Residents are allowed to see the bookings of one week before and after the current one.
      * @param {string} username The username related to the person.
      * @param {int} week The specific week to get the passes related to the week dates.
-     * @returns {PassScheduleDTO | null} An object with All the bookings for a specific week.
+     * @return {PassScheduleDTO | null} An object with All the bookings for a specific week.
      *                                   null indicates that something went wrong and it gets logged.
      */
     async getResidentPasses(username, week) {
@@ -360,19 +359,19 @@ class LaundryDAO {
                     emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidPrivilege);
             }
 
-            let passesSchedule = await this._getPassesSchedule(weekCorrection);
+            const passesSchedule = await this._getPassesSchedule(weekCorrection);
             const userBooking = await this.getBookedPass(username);
 
             if (passesSchedule === null) {
                 return null;
             }
 
-            const bookingParam = [{ date: userBooking.date, room: userBooking.roomNumber, range: userBooking.passRange }];
+            const bookingParam = [{date: userBooking.date, room: userBooking.roomNumber, range: userBooking.passRange}];
             await this._fillPassSchedule(passesSchedule, bookingParam, slotStatusEnum.SelfBooking);
 
-            passesSchedule.roomPasses.forEach(room => {
-                room.passes.forEach(pass => {
-                    pass.slots.forEach(slot => {
+            passesSchedule.roomPasses.forEach((room) => {
+                room.passes.forEach((pass) => {
+                    pass.slots.forEach((slot) => {
                         delete slot.username;
                     });
                 });
@@ -387,11 +386,11 @@ class LaundryDAO {
     }
 
     /**
-     * Get the passes schedule for the week with all the username related to the bookings. 
+     * Get the passes schedule for the week with all the username related to the bookings.
      * Can be only used by an administrator.
      * @param {string} username The username related to the person.
      * @param {int} week The specific week to get the passes related to the week dates.
-     * @returns {PassScheduleDTO | null} An object with All the bookings for a specific week.
+     * @return {PassScheduleDTO | null} An object with All the bookings for a specific week.
      *                                   null indicates that something went wrong and it gets logged.
      */
     async getPasses(username, week) {
@@ -409,7 +408,7 @@ class LaundryDAO {
                     emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidPrivilege);
             }
 
-            let passesSchedule = await this._getPassesSchedule(weekCorrection);
+            const passesSchedule = await this._getPassesSchedule(weekCorrection);
 
             if (passesSchedule === null) {
                 return null;
@@ -417,7 +416,6 @@ class LaundryDAO {
 
             passesSchedule.weekNumber = week;
             return passesSchedule;
-
         } catch (err) {
             this.logger.logException(err);
             return null;
@@ -438,21 +436,21 @@ class LaundryDAO {
     // eslint-disable-next-line require-jsdoc
     async _getPassesSchedule(week) {
         try {
-            const { startWeekDate, endWeekDate } = await this._weekStartAndEndDate(week);
-            let passSchedule = await this._buildPassesSchedule(week);
+            const {startWeekDate, endWeekDate} = await this._weekStartAndEndDate(week);
+            const passSchedule = await this._buildPassesSchedule(week);
 
             if (passSchedule === null) {
                 return null;
             }
 
             const getSpecificBookingsQuery = {
-                text: `SELECT	pass_booking.date, pass_schedule.room,
+                text: `SELECT    pass_booking.date, pass_schedule.room,
                 pass.range, account.username
-                FROM	pass_booking
+                FROM    pass_booking
                 INNER JOIN account ON (account.id = pass_booking.account_id)
                 INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
                 INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
-                WHERE	pass_booking.date >= $1 AND
+                WHERE    pass_booking.date >= $1 AND
                 pass_booking.date <= $2`,
                 values: [startWeekDate, endWeekDate],
             };
@@ -490,11 +488,11 @@ class LaundryDAO {
     async _fillPassSchedule(passSchedule, passes, status) {
         try {
             for (let i = 0; i < passes.length; i++) {
-                passSchedule.roomPasses.forEach(room => {
+                passSchedule.roomPasses.forEach((room) => {
                     if (room.roomNum === passes[i].room) {
-                        room.passes.forEach(pass => {
+                        room.passes.forEach((pass) => {
                             if (pass.date === passes[i].date) {
-                                pass.slots.forEach(slot => {
+                                pass.slots.forEach((slot) => {
                                     if (slot.range === passes[i].range) {
                                         slot.status = status;
                                         slot.username = passes[i].username;
@@ -514,7 +512,7 @@ class LaundryDAO {
     async _weekStartAndEndDate(week) {
         const startWeekDate = dayjs().week(week).day(1).$d.toISOString().substring(0, 10);
         const endWeekDate = dayjs().week(week).day(7).$d.toISOString().substring(0, 10);
-        return { startWeekDate: startWeekDate, endWeekDate: endWeekDate };
+        return {startWeekDate: startWeekDate, endWeekDate: endWeekDate};
     }
 
     // eslint-disable-next-line require-jsdoc
@@ -527,25 +525,25 @@ class LaundryDAO {
                 return null;
             }
 
-            let roomPasses = [];
+            const roomPasses = [];
             for (let roomCounter = 0; roomCounter < passSchedule.length; roomCounter++) {
-                let roomPass = [];
+                const roomPass = [];
 
                 for (let day = 0; day < weekDate.length; day++) {
-                    let slots = [];
+                    const slots = [];
 
                     for (let slotCounter = 0; slotCounter < passSchedule[roomCounter].slots.length; slotCounter++) {
                         slots[slotCounter] = {
                             range: passSchedule[roomCounter].slots[slotCounter],
                             status: slotStatusEnum.Available,
-                            username: emptyParamEnum.Username
+                            username: emptyParamEnum.Username,
                         };
                     }
 
                     roomPass[day] = new PassDTO(weekDate[day], slots);
                 }
 
-                roomPasses[roomCounter] = { roomNum: passSchedule[roomCounter].room, passes: roomPass };
+                roomPasses[roomCounter] = {roomNum: passSchedule[roomCounter].room, passes: roomPass};
             }
 
             return new PassScheduleDTO(week, passSchedule.length, weekDate, roomPasses, bookingStatusCodes.OK);
@@ -558,11 +556,11 @@ class LaundryDAO {
     async _getPassScheduleScheme() {
         try {
             const passScheduleQuery = {
-                text: `SELECT		pass_schedule.room, 
+                text: `SELECT        pass_schedule.room, 
                 ARRAY_AGG(pass.range) AS slots
-                FROM		pass_schedule
+                FROM        pass_schedule
                             INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
-                GROUP BY	pass_schedule.room
+                GROUP BY    pass_schedule.room
                 ORDER BY    pass_schedule.room ASC`,
                 values: [],
             };
@@ -588,7 +586,7 @@ class LaundryDAO {
     async _getWeekDates(week) {
         try {
             const offset = 1;
-            let weekDate = [];
+            const weekDate = [];
 
             for (let day = 0; day < 7; day++) {
                 weekDate[day] = dayjs().week(week).day(day + offset).$d.toISOString().substring(0, 10);
@@ -606,7 +604,7 @@ class LaundryDAO {
      * @param {int} roomNumber The number related to the chosen room.
      * @param {string} date The date of the laundry pass.
      * @param {string} passRange The time frame that the pass have.
-     * @returns {boolean | null} true or false to give a confirmation of the locking.
+     * @return {boolean | null} true or false to give a confirmation of the locking.
      *                           null indicates that something went wrong and it gets logged.
      */
     async lockPass(username, roomNumber, date, passRange) {
@@ -732,13 +730,13 @@ class LaundryDAO {
     async _getActivePasses(accountID) {
         try {
             const checkActivePassesQuery = {
-                text: `SELECT	pass_booking.date, pass_schedule.room, pass.range
-                FROM	pass_booking
+                text: `SELECT    pass_booking.date, pass_schedule.room, pass.range
+                FROM    pass_booking
                         INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
                         INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
-                WHERE	pass_booking.account_id = $1 AND
+                WHERE    pass_booking.account_id = $1 AND
                         pass_booking.date >= CURRENT_DATE`,
-                values: [accountID]
+                values: [accountID],
             };
 
             let retValue = -1;
@@ -752,7 +750,7 @@ class LaundryDAO {
                 for (let booking = 0; booking < results.rowCount; booking++) {
                     const checkDate = await this._isCurrentDate(results.rows[booking].date);
                     const checkRange = await this._checkRangeHour(results.rows[booking].range);
-                    
+
                     if (checkDate && checkRange === 0) {
                         retValue -= 1;
                     }
@@ -799,7 +797,7 @@ class LaundryDAO {
     /**
      * Unlock the temporarily locked pass slot that the user had.
      * @param {string} username The username that related to the user.
-     * @returns {boolean | null} true or false to give a confirmation of the unlocking.
+     * @return {boolean | null} true or false to give a confirmation of the unlocking.
      *                           null indicates that something went wrong and it gets logged.
      */
     async unlockPass(username) {
@@ -835,7 +833,7 @@ class LaundryDAO {
      * @param {int} roomNumber The number related to the room.
      * @param {string} date The date of the laundry pass.
      * @param {string} passRange The time frame that the pass have.
-     * @returns {BookingDTO | null} An object that has the result of the booking result.
+     * @return {BookingDTO | null} An object that has the result of the booking result.
      *                              null indicates that something went wrong and it gets logged.
      */
     async bookPass(username, roomNumber, date, passRange) {
@@ -869,7 +867,7 @@ class LaundryDAO {
 
             const checkDate = await this._isCurrentDate(date);
             const checkRange = await this._checkRangeHour(passRange);
-            const { startMonthDate, endMonthDate } = await this._monthStartAndEndDate(dateMonth);
+            const {startMonthDate, endMonthDate} = await this._monthStartAndEndDate(dateMonth);
             const bookedPassID = await this._getBookedPassID(date, passScheduleID);
             const lockOwnerID = await this._getLockOwner(date, passScheduleID);
             const activePassesCount = await this._getActivePasses(personInfo.accountID);
@@ -902,7 +900,6 @@ class LaundryDAO {
 
             await this._executeQuery('BEGIN');
 
-            let retValue;
             const insertBookingQuery = {
                 text: `INSERT INTO public.pass_booking(date, account_id, pass_schedule_id)
                     VALUES ($1, $2, $3)`,
@@ -911,7 +908,7 @@ class LaundryDAO {
 
             await this._executeQuery(insertBookingQuery);
             await this.unlockPass(username);
-            retValue = new BookingDTO(date, roomNumber, passRange, bookingStatusCodes.OK);
+            const retValue = new BookingDTO(date, roomNumber, passRange, bookingStatusCodes.OK);
 
             await this._executeQuery('COMMIT');
 
@@ -925,7 +922,7 @@ class LaundryDAO {
     // eslint-disable-next-line require-jsdoc
     async _isCurrentDate(date) {
         try {
-            let currentDate = dayjs().$d.toISOString().substring(0, 10);
+            const currentDate = dayjs().$d.toISOString().substring(0, 10);
 
             if (currentDate === date) {
                 return true;
@@ -940,10 +937,10 @@ class LaundryDAO {
     // eslint-disable-next-line require-jsdoc
     async _checkRangeHour(range) {
         try {
-            const startHour =  parseInt(range.substring(0, 3));
+            const startHour = parseInt(range.substring(0, 3));
             const endHour = parseInt(range.substring(3, 5));
             const currentHour = dayjs().hour();
-            
+
             if (currentHour < startHour) {
                 return -1;
             }
@@ -962,7 +959,7 @@ class LaundryDAO {
     async _monthStartAndEndDate(month) {
         const startMonthDate = dayjs().month(month).startOf('month').add(1, 'day');
         const endMonthDate = dayjs().month(month).endOf('month');
-        return { startMonthDate: startMonthDate, endMonthDate: endMonthDate };
+        return {startMonthDate: startMonthDate, endMonthDate: endMonthDate};
     }
 
     // eslint-disable-next-line require-jsdoc
@@ -999,7 +996,7 @@ class LaundryDAO {
     /**
      * Get the active booking of the person.
      * @param {string} username The username related to the person.
-     * @returns {BookingDTO | null} An object with the booking information.
+     * @return {BookingDTO | null} An object with the booking information.
      *                              null indicates that something went wrong and it gets logged.
      */
     async getBookedPass(username) {
@@ -1012,11 +1009,11 @@ class LaundryDAO {
             }
 
             const getBookingQuery = {
-                text: `SELECT	pass_booking.date, pass_schedule.room, pass.range
-                FROM	pass_booking
+                text: `SELECT    pass_booking.date, pass_schedule.room, pass.range
+                FROM    pass_booking
                         INNER JOIN pass_schedule ON (pass_schedule.id = pass_booking.pass_schedule_id)
                         INNER JOIN pass ON (pass.id = pass_schedule.pass_id)
-                WHERE	pass_booking.account_id = $1 AND
+                WHERE    pass_booking.account_id = $1 AND
                         pass_booking.date >= CURRENT_DATE`,
                 values: [personInfo.accountID],
             };
@@ -1030,10 +1027,10 @@ class LaundryDAO {
             if (results.rowCount > 0) {
                 const checkDate = await this._isCurrentDate(results.rows[0].date);
                 const checkRange = await this._checkRangeHour(results.rows[0].range);
-                
+
                 if (checkDate && checkRange > 0) {
                     retValue = new BookingDTO(emptyParamEnum.Date, emptyParamEnum.RoomNumber,
-                    emptyParamEnum.PassRange, bookingStatusCodes.NoBooking);
+                        emptyParamEnum.PassRange, bookingStatusCodes.NoBooking);
                 } else {
                     retValue = new BookingDTO(results.rows[0].date, results.rows[0].room, results.rows[0].range, bookingStatusCodes.OK);
                 }
@@ -1057,7 +1054,7 @@ class LaundryDAO {
      * @param {int} roomNumber The number related to the room.
      * @param {string} date The date that the pass is booked on.
      * @param {string} passRange The time frame of the booked pass.
-     * @returns {boolean | null} true or false to indicate that the booking has been canceled.
+     * @return {boolean | null} true or false to indicate that the booking has been canceled.
      *                           null indicates that something went wrong and it gets logged.
      */
     async cancelBookedPass(username, roomNumber, date, passRange) {
@@ -1153,7 +1150,7 @@ class LaundryDAO {
         } catch (mainErr) {
             try {
                 if (this.client !== undefined && this.client._connected) {
-                    await this.this.client.query('ROLLBACK')
+                    await this.this.client.query('ROLLBACK');
                 }
             } catch (err) {
                 this.logger.logException(err);

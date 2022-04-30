@@ -31,7 +31,7 @@ class BookingErrorHandler extends ErrorLogger {
             if (res.headersSent) {
                 return next(err);
             }
-            res.status(503).send({ error: 'The booking service is unavailable.' });
+            res.status(503).send({error: 'The booking service is unavailable.'});
         });
     }
 }

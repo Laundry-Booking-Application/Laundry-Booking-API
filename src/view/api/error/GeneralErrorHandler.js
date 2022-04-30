@@ -34,7 +34,7 @@ class GeneralErrorHandler extends ErrorLogger {
             if (res.headersSent) {
                 return next(err);
             }
-            res.status(500).send({ error: 'The server encountered an unhandled error.' });
+            res.status(500).send({error: 'The server encountered an unhandled error.'});
         });
     }
 }

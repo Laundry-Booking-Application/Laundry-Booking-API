@@ -7,7 +7,7 @@ const Validators = require('../util/Validators');
 class UserInfoDTO {
     /**
    * Create an instance to hold the information about the person.
-   * @param {[{firstName, lastName, personalNumber, username}]} personInfo 
+   * @param {[{firstName, lastName, personalNumber, username}]} personInfo
    * firstName The name of the user.
    * lastName The surname of user .
    * personalNumber The personal number related to the person.
@@ -16,7 +16,7 @@ class UserInfoDTO {
                               which can be found in the userInfoStatusCodes.js.
    */
     constructor(personInfo, statusCode) {
-        personInfo.forEach(person => Validators.isPersonInfo(person, 'Person Info'));
+        personInfo.forEach((person) => Validators.isPersonInfo(person, 'Person Info'));
         Validators.isNonNegativeNumber(statusCode, 'Status Code');
         this.personInfo = personInfo;
         this.statusCode = statusCode;

@@ -10,9 +10,9 @@ class UserDTO {
      * Create an instance of logged in status for the user.
      * @param {string} username The username of the user.
      * @param {int} privilegeID The privilege that the user have to access stuff,
-     *                          which can be found in the privilegeEnum.js. 
+     *                          which can be found in the privilegeEnum.js.
      * @param {int} statusCode The code that represent the status of the information,
-     *                         which can be found in the userStatusCodes.js. 
+     *                         which can be found in the userStatusCodes.js.
      */
     constructor(username, privilegeID, statusCode) {
         Validators.isAlphanumericString(username, 'Username');
