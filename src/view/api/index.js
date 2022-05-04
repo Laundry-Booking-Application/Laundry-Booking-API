@@ -22,7 +22,7 @@ class RequestHandlerLoader {
    *
    * @param {RequestHandler} reqHandler The request handler to be added.
    */
-    addRequestHandler(reqHandler) {
+    async addRequestHandler(reqHandler) {
         this.reqHandlers.push(reqHandler);
     }
 
@@ -31,7 +31,7 @@ class RequestHandlerLoader {
    *
    * @param {ErrorHandler} errorHandler The error handler to be added.
    */
-    addErrorHandler(errorHandler) {
+    async addErrorHandler(errorHandler) {
         this.errorHandlers.push(errorHandler);
     }
 
@@ -41,11 +41,11 @@ class RequestHandlerLoader {
    *
    * @param {Application} app The express application that will host the request handlers.
    */
-    loadRequestHandlers(app) {
-        this.reqHandlers.forEach((reqHandler) => {
-            reqHandler.registerHandler();
-            app.use(reqHandler.path, reqHandler.router);
-        });
+    async loadRequestHandlers(app) {
+        for (const reqHandler of this.reqHandlers) {
+            await reqHandler.registerHandler();
+            await app.use(reqHandler.path, reqHandler.router);
+        }
     }
 
     /**
@@ -53,19 +53,27 @@ class RequestHandlerLoader {
    *
    * @param {Application} app The express application that will host the error handlers.
    */
-    loadErrorHandlers(app) {
-        this.errorHandlers.forEach((errorHandler) => {
-            errorHandler.registerHandler(app);
-        });
+    async loadErrorHandlers(app) {
+        for (const errorHandler of this.errorHandlers) {
+            await errorHandler.registerHandler(app);
+        }
     }
 }
 
-const requestHandlerLoader = new RequestHandlerLoader();
-requestHandlerLoader.addRequestHandler(new UserApi());
-requestHandlerLoader.addRequestHandler(new BookingApi());
-requestHandlerLoader.addErrorHandler(new UserErrorHandler());
-requestHandlerLoader.addErrorHandler(new BookingErrorHandler());
-requestHandlerLoader.addErrorHandler(new GeneralErrorHandler());
+/**
+ * Initializes and loads all the request and error handlers.
+ * @param {Application} app The express application that will host the request and error handlers.
+ */
+async function initRequestHandlerLoader(app) {
+    const requestHandlerLoader = new RequestHandlerLoader();
+    await requestHandlerLoader.addRequestHandler(new UserApi());
+    await requestHandlerLoader.addRequestHandler(new BookingApi());
+    await requestHandlerLoader.addErrorHandler(new UserErrorHandler());
+    await requestHandlerLoader.addErrorHandler(new BookingErrorHandler());
+    await requestHandlerLoader.addErrorHandler(new GeneralErrorHandler());
+    await requestHandlerLoader.loadRequestHandlers(app);
+    await requestHandlerLoader.loadErrorHandlers(app);
+}
 
-module.exports = requestHandlerLoader;
+module.exports = initRequestHandlerLoader;
 

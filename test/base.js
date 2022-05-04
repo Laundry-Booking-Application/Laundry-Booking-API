@@ -1,6 +1,5 @@
 'use strict';
 
-
 const path = require('path');
 const APP_ROOT_DIR = path.join(__dirname, '..');
 
@@ -45,24 +44,15 @@ app.get('/', (req, res, next) => {
 });
 
 /**
- * Initializes the Express server and registers all the routes before listening for connections.
- * @return {Object} server An http.Server object.
+ * Initializes the Express server and registers all the routes, returns the express app to be used for testing.
+ * This function differs from the server.js version, to fulfill the needs of the supertest package.
+ * @return {Application} app The express application object.
  */
 async function initServer() {
-    const initRequestHandlerLoader = require('./view/api');
+    const initRequestHandlerLoader = require('../src/view/api');
     await initRequestHandlerLoader(app);
-
-    // process.env.PORT is set by Heroku, process.env.SERVER_PORT is a fallback
-    const server = await app.listen(
-        process.env.PORT || process.env.SERVER_PORT,
-        () => {
-            console.log(
-                `Server is up at ${server.address().address}:${server.address().port}`,
-            );
-        },
-    );
-    return server;
+    return app;
 }
 
 
-module.exports = initServer();
+module.exports = initServer;
