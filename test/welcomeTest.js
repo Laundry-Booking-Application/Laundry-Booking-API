@@ -4,7 +4,7 @@ const {expect} = require('chai');
 const request = require('supertest');
 const initServer = require('./base');
 
-describe('GET Welcome message', () => {
+describe('Fetch Welcome message', () => {
     let app;
 
     before(function() {

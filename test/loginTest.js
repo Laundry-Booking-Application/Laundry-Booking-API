@@ -4,7 +4,7 @@ const {expect} = require('chai');
 const request = require('supertest');
 const initServer = require('./base');
 
-describe('POST Login User', () => {
+describe('Login User', () => {
     let app;
 
     before(function() {
