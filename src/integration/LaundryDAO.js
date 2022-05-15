@@ -284,6 +284,12 @@ class LaundryDAO {
                 return false;
             }
 
+            const deleteLockQuery = {
+                text: `DELETE FROM public.pass_lock
+                WHERE account_id = $1`,
+                values: [userInfo.accountID],
+            };
+
             const deleteBookingQuery = {
                 text: `DELETE FROM public.pass_booking
                 WHERE account_id = $1`,
@@ -304,6 +310,7 @@ class LaundryDAO {
 
             await this._executeQuery('BEGIN');
 
+            await this._executeQuery(deleteLockQuery);
             await this._executeQuery(deleteBookingQuery);
             await this._executeQuery(deleteAccountQuery);
             await this._executeQuery(deletePersonQuery);
@@ -620,13 +627,23 @@ class LaundryDAO {
                 return false;
             }
 
-            const checkDate = await this._isCurrentDate(date);
+            const currentDate = dayjs();
+            const currentWeek = dayjs().week();
+            const dateWeek = dayjs(date).week();
             const checkRange = await this._checkRangeHour(passRange);
             const bookedPassID = await this._getBookedPassID(date, passScheduleID);
             const lockOwnerID = await this._getLockOwner(date, passScheduleID);
             const activePassesCount = await this._getActivePasses(personInfo.accountID);
 
-            if (checkDate && checkRange > 0) {
+            if (currentWeek > dateWeek || dateWeek > (currentWeek + 1)) {
+                return false;
+            }
+
+            if (date < currentDate.$d.toISOString().substring(0, 10)) {
+                return false;
+            }
+
+            if (checkRange > 0) {
                 return false;
             }
 

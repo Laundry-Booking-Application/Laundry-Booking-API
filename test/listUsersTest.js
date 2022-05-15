@@ -6,7 +6,7 @@ const userInfoStatusCodes = require('../src/util/userInfoStatusCodes');
 // eslint-disable-next-line no-unused-vars
 const envLoader = require('./envLoader');
 
-describe('Fetch Users List', () => {
+describe('Fetch Users List Test', () => {
     let controller;
 
     before(async function() {
