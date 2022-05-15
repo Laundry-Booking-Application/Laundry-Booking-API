@@ -20,6 +20,34 @@ class DataGenerator {
     }
 
     /**
+     * Registers a test user.
+     * @param {Controller} controller An instance of the controller.
+     * @param {string} adminUsername The username of the admin that is issuing the user registration.
+     * @param {string} testUsername The username of the test user to be registered.
+     */
+    static async generateTestUser(controller, adminUsername, testUsername) {
+        await controller.deleteUser(adminUsername, testUsername);
+        const issuerUsername = adminUsername;
+        const firstName = testUsername;
+        const lastName = testUsername;
+        const personalNumber = await this.randomPersonalNumber();
+        const email = firstName + '.' + lastName + '@test.se';
+        const username = testUsername;
+        const password = testUsername;
+        await controller.registerResident(issuerUsername, firstName, lastName, personalNumber, email, username, password);
+    }
+
+    /**
+     * Deletes a test user.
+     * @param {Controller} controller An instance of the controller.
+     * @param {string} adminUsername The username of the admin that is issuing the user deletion.
+     * @param {string} testUsername The username of the test user to be deleted.
+     */
+    static async deleteTestUser(controller, adminUsername, testUsername) {
+        await controller.deleteUser(adminUsername, testUsername);
+    }
+
+    /**
      * Generate random resident users and add them to the database.
      * Note that the username is used for the password.
      * @param {int} userCount The count of users wanted to be generated.
@@ -78,7 +106,7 @@ class DataGenerator {
      * Generate Random character. The characters could be english letters and numbers.
      * @returns {char} Random character.
      */
-    async randomCharacter() {
+    static async randomCharacter() {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         const randomChar = characters[Math.floor(Math.random() * characters.length)];
         return randomChar;
@@ -88,7 +116,7 @@ class DataGenerator {
      * Generate random name.
      * @returns {string} Random name.
      */
-    async randomName() {
+    static async randomName() {
         const names = ['John', 'Wilson', 'Kyle', 'Butler', 'Alexis', 'Rollins', 'Danielle', 'Melton',
             'Matthew', 'Perez', 'David', 'Patrick', 'Christopher', 'Stephens', 'Felicia', 'Jackson',
             'Joseph', 'Gonzales', 'Deborah', 'Bryan', 'Osborne', 'Megan', 'Atkinson', 'Garcia',
@@ -102,7 +130,7 @@ class DataGenerator {
      * Generate random swedish personal number of format YYYYMMDD-XXXX.
      * @returns {string} THe random personal number.
      */
-    async randomPersonalNumber() {
+    static async randomPersonalNumber() {
         const date = await this.randomDate(new Date('1950-01-01'), new Date('2005-01-01'));
         let num = '';
 
@@ -136,7 +164,7 @@ class DataGenerator {
      * @param {Date} endDate The max value that the date would be.
      * @returns {string} The random generated date.
      */
-    async randomDate(startDate, endDate) {
+    static async randomDate(startDate, endDate) {
         const randDate = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
         return randDate.toISOString().substring(0, 10);
     }
@@ -147,11 +175,11 @@ class DataGenerator {
      * @param {int} max The max value that the number would be.
      * @returns {int} THe random generated number.
      */
-    async randomNum(min, max) {
+    static async randomNum(min, max) {
         return Math.floor(Math.random() * (max - min)) + min;
     }
 
-    async numberCalc(multiplier, number) {
+    static async numberCalc(multiplier, number) {
         let calc = multiplier * number;
         if (calc >= 10) {
             calc = 1 + (calc % 10);
@@ -215,7 +243,7 @@ class DataGenerator {
                 if (pass.date > currentDate) {
                     pass.slots.forEach(slot => {
                         if (slot.status == 'Available') {
-                            emptyBookings.push({ room: room.roomNum, date: pass.date, range: slot.range})
+                            emptyBookings.push({ room: room.roomNum, date: pass.date, range: slot.range })
                         }
                     });
                 }

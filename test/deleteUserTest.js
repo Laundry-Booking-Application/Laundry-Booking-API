@@ -1,28 +1,22 @@
 'use strict';
 
-const {assert} = require('chai');
+const { assert } = require('chai');
 const Controller = require('../src/controller/Controller');
 // eslint-disable-next-line no-unused-vars
 const envLoader = require('./envLoader');
+const DataGenerator = require('./DataGenerator');
 
-describe('Delete User', () => {
+describe('Delete User Test', () => {
     let controller;
 
-    before(async function() {
+    before(async function () {
         /**
          * Creates an instance of the controller needed for testing and registers a test user.
          * @return {Controller} retController The newly instantiated controller.
          */
         async function prepareTest() {
             const retController = await Controller.createController();
-            const issuerUsername = 'testAdmin';
-            const firstName = 'unitTestUser';
-            const lastName = 'unitTestUser';
-            const personalNumber = '19710530-8659';
-            const email = 'unitTestUser@unitTestUser.se';
-            const username = 'unitTestUser';
-            const password = 'unitTestUser#1337';
-            await retController.registerResident(issuerUsername, firstName, lastName, personalNumber, email, username, password);
+            await DataGenerator.generateTestUser(retController, 'testAdmin', 'unitTestDeleteUser');
             return retController;
         }
         return prepareTest().then((retController) => {
@@ -30,9 +24,16 @@ describe('Delete User', () => {
         });
     });
 
+    /**
+     * Deletes the unit test user after last test in this block
+     */
+    after(async function () {
+        await DataGenerator.deleteTestUser(controller, 'testAdmin', 'unitTestDeleteUser');
+    });
+
 
     it('should fail to delete user due to lack of privilege', async () => {
-        const deletionResult = await controller.deleteUser('firstTest', 'unitTestUser');
+        const deletionResult = await controller.deleteUser('firstTest', 'unitTestDeleteUser');
         assert.isNotNull(deletionResult, 'An error has occurred while contacting the database');
         assert.isFalse(deletionResult, 'Expected failure to delete user due to lack of privilege');
     });
@@ -44,7 +45,7 @@ describe('Delete User', () => {
     });
 
     it('should succeed deleting the unit test user', async () => {
-        const deletionResult = await controller.deleteUser('testAdmin', 'unitTestUser');
+        const deletionResult = await controller.deleteUser('testAdmin', 'unitTestDeleteUser');
         assert.isNotNull(deletionResult, 'An error has occurred while contacting the database');
         assert.isTrue(deletionResult, 'Expected success in deleting the unit test user');
     });
