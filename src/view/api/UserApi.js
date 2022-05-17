@@ -1,6 +1,7 @@
 'use strict';
 
 const {body, validationResult} = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const RequestHandler = require('./RequestHandler');
 const Validators = require('../../util/Validators');
 const userStatusCodes = require('../../util/userStatusCodes');
@@ -38,6 +39,16 @@ class UserApi extends RequestHandler {
         try {
             await this.fetchController();
 
+
+            const loginLimiter = rateLimit({
+                windowMs: 15 * 60 * 1000, // 15 minutes
+                max: 50, // Limit each IP to 50 login requests requests per `window` (here, per 15 minutes)
+                message:
+                    'Too many login attempts from this IP, please try again after 15 minutes.',
+                standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+                legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+            });
+
             /**
              * Attempts to login a user.
              * The username and password received in the request are validated.
@@ -56,6 +67,7 @@ class UserApi extends RequestHandler {
              */
             this.router.post(
                 '/login',
+                loginLimiter,
                 body('username').isAlphanumeric(),
                 body('password').isLength({min: 8, max: 32}),
                 async (req, res, next) => {

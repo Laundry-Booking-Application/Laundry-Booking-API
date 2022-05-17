@@ -7,9 +7,9 @@ const envLoader = require('./envLoader');
 const DataGenerator = require('./DataGenerator');
 const dayjs = require('dayjs');
 
-describe('Lock Pass Test', () => {
+describe('Cancel Booked Pass Test', () => {
     let controller;
-    const testUsername = 'unitTestLockUser';
+    const testUsername = 'unitTestCancelUser';
     const adminUsername = 'testAdmin';
 
     before(async function() {
@@ -35,21 +35,17 @@ describe('Lock Pass Test', () => {
     });
 
 
-    it('should fail to lock pass due to wrong date', async () => {
+    it('should fail to cancel inexistent booking', async () => {
         const yesterdayDate = dayjs().subtract(1, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, yesterdayDate, '07-12');
-        assert.isFalse(lockResult, 'Expected failure to lock pass due to wrong date');
+        const cancellationResult = await controller.cancelBookedPass(testUsername, 1, yesterdayDate, '07-12');
+        assert.isFalse(cancellationResult, 'Expected failure to cancel inexistent booking');
     });
 
-    it('should fail to lock pass due to wrong pass range', async () => {
+    it('should succeed cancelling booked pass', async () => {
         const tomorrowDate = dayjs().add(1, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, tomorrowDate, '09-12');
-        assert.isFalse(lockResult, 'Expected failure to lock pass due to wrong pass range');
-    });
-
-    it('should succeed locking the pass', async () => {
-        const tomorrowDate = dayjs().add(4, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, tomorrowDate, '07-12');
-        assert.isTrue(lockResult, 'Expected to succeed locking the pass');
+        // eslint-disable-next-line no-unused-vars
+        const bookingDTO = await controller.bookPass(testUsername, 1, tomorrowDate, '07-12');
+        const cancellationResult = await controller.cancelBookedPass(testUsername, 1, tomorrowDate, '07-12');
+        assert.isTrue(cancellationResult, 'Expected success cancelling booked pass');
     });
 });

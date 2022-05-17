@@ -51,7 +51,7 @@ class DataGenerator {
      * Generate random resident users and add them to the database.
      * Note that the username is used for the password.
      * @param {int} userCount The count of users wanted to be generated.
-     * @returns {string} Message to tell that the generation is done.
+     * @return {string} Message to tell that the generation is done.
      */
     async residentUser(userCount) {
         for (let i = 0; i < userCount; i++) {
@@ -65,7 +65,7 @@ class DataGenerator {
      * Generate random administrator users and add them to the database.
      * Note that the username is used for the password.
      * @param {int} userCount The count of users wanted to be generated.
-     * @returns {string} Message to tell that the generation is done.
+     * @return {string} Message to tell that the generation is done.
      */
     async administratorUser(userCount) {
         for (let i = 0; i < userCount; i++) {
@@ -77,7 +77,7 @@ class DataGenerator {
 
     /**
      * Generate a random user information.
-     * @returns {RegisterDTO} Object with the random user information.
+     * @return {RegisterDTO} Object with the random user information.
      */
     async randomUser() {
         const firstName = await this.randomName();
@@ -90,7 +90,7 @@ class DataGenerator {
 
     /**
      * Generate random username, could contain characters and numbers.
-     * @returns {string} The random generated username.
+     * @return {string} The random generated username.
      */
     async randomUsername() {
         let username = '';
@@ -104,7 +104,7 @@ class DataGenerator {
 
     /**
      * Generate Random character. The characters could be english letters and numbers.
-     * @returns {char} Random character.
+     * @return {char} Random character.
      */
     static async randomCharacter() {
         const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -114,7 +114,7 @@ class DataGenerator {
 
     /**
      * Generate random name.
-     * @returns {string} Random name.
+     * @return {string} Random name.
      */
     static async randomName() {
         const names = ['John', 'Wilson', 'Kyle', 'Butler', 'Alexis', 'Rollins', 'Danielle', 'Melton',
@@ -128,7 +128,7 @@ class DataGenerator {
 
     /**
      * Generate random swedish personal number of format YYYYMMDD-XXXX.
-     * @returns {string} THe random personal number.
+     * @return {string} THe random personal number.
      */
     static async randomPersonalNumber() {
         const date = await this.randomDate(new Date('1950-01-01'), new Date('2005-01-01'));
@@ -162,7 +162,7 @@ class DataGenerator {
      * Generate a random date with format YYYY-MM-DD.
      * @param {Date} startDate The min value that the date would be.
      * @param {Date} endDate The max value that the date would be.
-     * @returns {string} The random generated date.
+     * @return {string} The random generated date.
      */
     static async randomDate(startDate, endDate) {
         const randDate = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
@@ -173,12 +173,13 @@ class DataGenerator {
      * Generate a random number between a certain range.
      * @param {int} min The mix value that the number would be.
      * @param {int} max The max value that the number would be.
-     * @returns {int} THe random generated number.
+     * @return {int} THe random generated number.
      */
     static async randomNum(min, max) {
         return Math.floor(Math.random() * (max - min)) + min;
     }
 
+    // eslint-disable-next-line require-jsdoc
     static async numberCalc(multiplier, number) {
         let calc = multiplier * number;
         if (calc >= 10) {
@@ -188,8 +189,8 @@ class DataGenerator {
     }
 
     /**
-     * Make a booking for each resident users registered in the database. 
-     * @returns {string} Message telling the generation is done.
+     * Make a booking for each resident users registered in the database.
+     * @return {string} Message telling the generation is done.
      */
     async makeBookings() {
         const currentWeek = await this.laundryDAO.getWeekNumber();
@@ -199,9 +200,9 @@ class DataGenerator {
 
         for (let i = 0; i < residentUsers.length; i++) {
             const result = await this.laundryDAO.bookPass(residentUsers[i], emptyBookings[0].room, emptyBookings[0].date, emptyBookings[0].range);
-			if (result !== null && result.statusCode === 0) {
-				emptyBookings.shift();
-			}            
+            if (result !== null && result.statusCode === 0) {
+                emptyBookings.shift();
+            }
         }
 
         return 'Done';
@@ -209,7 +210,7 @@ class DataGenerator {
 
     /**
      * Get a list of the registered resident username from the database.
-     * @returns {[string]} List of registered resident username. 
+     * @return {[string]} List of registered resident username.
      */
     async getResidentUsers() {
         const residentList = await this.laundryDAO.listUsers(this.adminUsername);
@@ -217,8 +218,8 @@ class DataGenerator {
             return [];
         }
 
-        let residentUsernames = [];
-        residentList.personInfo.forEach(user => {
+        const residentUsernames = [];
+        residentList.personInfo.forEach((user) => {
             residentUsernames.push(user.username);
         });
 
@@ -228,7 +229,7 @@ class DataGenerator {
     /**
      * Get the free booking slots for a specific week.
      * @param {string} week The number corresponding the current week or next one.
-     * @returns {[{room, date, range}]} List of objects with the free space information.
+     * @return {[{room, date, range}]} List of objects with the free space information.
      */
     async getBookingsSlots(week) {
         const currentDate = new Date().toISOString().substring(0, 10);
@@ -238,14 +239,14 @@ class DataGenerator {
             return [];
         }
 
-        let emptyBookings = [];
+        const emptyBookings = [];
 
-        bookingSchedule.roomPasses.forEach(room => {
-            room.passes.forEach(pass => {
+        bookingSchedule.roomPasses.forEach((room) => {
+            room.passes.forEach((pass) => {
                 if (pass.date > currentDate) {
-                    pass.slots.forEach(slot => {
+                    pass.slots.forEach((slot) => {
                         if (slot.status == 'Available') {
-                            emptyBookings.push({ room: room.roomNum, date: pass.date, range: slot.range })
+                            emptyBookings.push({room: room.roomNum, date: pass.date, range: slot.range});
                         }
                     });
                 }
