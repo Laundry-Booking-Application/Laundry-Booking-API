@@ -198,8 +198,10 @@ class DataGenerator {
         emptyBookings = emptyBookings.concat(await this.getBookingsSlots(currentWeek + 1));
 
         for (let i = 0; i < residentUsers.length; i++) {
-            await this.laundryDAO.bookPass(residentUsers[i], emptyBookings[0].room, emptyBookings[0].date, emptyBookings[0].range);
-            emptyBookings.shift();
+            const result = await this.laundryDAO.bookPass(residentUsers[i], emptyBookings[0].room, emptyBookings[0].date, emptyBookings[0].range);
+			if (result !== null && result.statusCode === 0) {
+				emptyBookings.shift();
+			}            
         }
 
         return 'Done';
