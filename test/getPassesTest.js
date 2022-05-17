@@ -2,14 +2,14 @@
 
 const {assert} = require('chai');
 const Controller = require('../src/controller/Controller');
+const scheduleStatusCodes = require('../src/util/scheduleStatusCodes');
 // eslint-disable-next-line no-unused-vars
 const envLoader = require('./envLoader');
 const DataGenerator = require('./DataGenerator');
-const dayjs = require('dayjs');
 
-describe('Lock Pass Test', () => {
+describe('Get Schedule Passes Test', () => {
     let controller;
-    const testUsername = 'unitTestLockUser';
+    const testUsername = 'unitTestPassesUser';
     const adminUsername = 'testAdmin';
 
     before(async function() {
@@ -35,21 +35,18 @@ describe('Lock Pass Test', () => {
     });
 
 
-    it('should fail to lock pass due to wrong date', async () => {
-        const yesterdayDate = dayjs().subtract(1, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, yesterdayDate, '07-12');
-        assert.isFalse(lockResult, 'Expected failure to lock pass due to wrong date');
+    it('should fail to retrieve detailed pass schedule due to lack of privilege', async () => {
+        const passScheduleDTO = await controller.getPasses(testUsername, 0);
+        assert.strictEqual(passScheduleDTO.statusCode, scheduleStatusCodes.InvalidPrivilege, 'Expected to fail due to lack of privilege');
     });
 
-    it('should fail to lock pass due to wrong pass range', async () => {
-        const tomorrowDate = dayjs().add(1, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, tomorrowDate, '09-12');
-        assert.isFalse(lockResult, 'Expected failure to lock pass due to wrong pass range');
+    it('should succeed retrieving the resident pass schedule', async () => {
+        const passScheduleDTO = await controller.getResidentPasses(testUsername, 0);
+        assert.strictEqual(passScheduleDTO.statusCode, scheduleStatusCodes.OK, 'Expected to succeed retrieving the resident pass schedule');
     });
 
-    it('should succeed locking the pass', async () => {
-        const tomorrowDate = dayjs().add(4, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, tomorrowDate, '07-12');
-        assert.isTrue(lockResult, 'Expected to succeed locking the pass');
+    it('should succeed retrieving detailed pass schedule as an administrator', async () => {
+        const passScheduleDTO = await controller.getPasses(adminUsername, 0);
+        assert.strictEqual(passScheduleDTO.statusCode, scheduleStatusCodes.OK, 'Expected to succeed retrieving detailed pass schedule as an administrator');
     });
 });

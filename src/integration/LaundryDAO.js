@@ -352,17 +352,17 @@ class LaundryDAO {
             const personInfo = await this._getPersonInfo(username);
 
             if (!checkWeek) {
-                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount, emptyParamEnum.WeekDates,
                     emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidWeek);
             }
 
             if (personInfo === null) {
-                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount, emptyParamEnum.WeekDates,
                     emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidUser);
             }
 
             if (personInfo.privilegeID !== privilegeEnum.Standard && personInfo.privilegeID !== privilegeEnum.Administrator) {
-                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount, emptyParamEnum.WeekDates,
                     emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidPrivilege);
             }
 
@@ -406,12 +406,12 @@ class LaundryDAO {
             const weekCorrection = week + 1;
 
             if (personInfo === null) {
-                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount, emptyParamEnum.WeekDates,
                     emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidUser);
             }
 
             if (personInfo.privilegeID !== privilegeEnum.Administrator) {
-                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount,
+                return new PassScheduleDTO(emptyParamEnum.Week, emptyParamEnum.RoomCount, emptyParamEnum.WeekDates,
                     emptyParamEnum.RoomPasses, scheduleStatusCodes.InvalidPrivilege);
             }
 

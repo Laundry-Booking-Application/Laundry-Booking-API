@@ -8,6 +8,7 @@ const APP_ROOT_DIR = path.join(__dirname, '..');
 const LaundryDAO = require('../src/integration/LaundryDAO');
 const DataGenerator = require('./DataGenerator');
 
+// eslint-disable-next-line no-unused-vars
 const result = require('dotenv-safe').config({
     path: path.join(APP_ROOT_DIR, '.env'),
     example: path.join(APP_ROOT_DIR, '.env.example'),
@@ -15,8 +16,8 @@ const result = require('dotenv-safe').config({
 });
 
 /**
- * Prepare the database DAO and the data generator. 
- * @returns {DataGenerator} Object responsible for generating data.
+ * Prepare the database DAO and the data generator.
+ * @return {DataGenerator} Object responsible for generating data.
  */
 async function initiateApp() {
     const laundryDAO = new LaundryDAO();
@@ -29,6 +30,7 @@ async function initiateApp() {
  * Start the manual generations of data.
  */
 async function start() {
+    // eslint-disable-next-line no-unused-vars
     const dataGenerator = await initiateApp();
     /*
     const result = await dataGenerator.();

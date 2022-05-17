@@ -2,14 +2,15 @@
 
 const {assert} = require('chai');
 const Controller = require('../src/controller/Controller');
+const bookingStatusCodes = require('../src/util/bookingStatusCodes');
 // eslint-disable-next-line no-unused-vars
 const envLoader = require('./envLoader');
 const DataGenerator = require('./DataGenerator');
 const dayjs = require('dayjs');
 
-describe('Lock Pass Test', () => {
+describe('Get Booked Pass Test', () => {
     let controller;
-    const testUsername = 'unitTestLockUser';
+    const testUsername = 'unitTestBookedUser';
     const adminUsername = 'testAdmin';
 
     before(async function() {
@@ -35,21 +36,16 @@ describe('Lock Pass Test', () => {
     });
 
 
-    it('should fail to lock pass due to wrong date', async () => {
-        const yesterdayDate = dayjs().subtract(1, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, yesterdayDate, '07-12');
-        assert.isFalse(lockResult, 'Expected failure to lock pass due to wrong date');
+    it('should report no active booking found', async () => {
+        const bookingDTO = await controller.getBookedPass(testUsername);
+        assert.strictEqual(bookingDTO.statusCode, bookingStatusCodes.NoBooking, 'Expected to report that no active booking found');
     });
 
-    it('should fail to lock pass due to wrong pass range', async () => {
+    it('should succeed fetching booked pass', async () => {
         const tomorrowDate = dayjs().add(1, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, tomorrowDate, '09-12');
-        assert.isFalse(lockResult, 'Expected failure to lock pass due to wrong pass range');
-    });
-
-    it('should succeed locking the pass', async () => {
-        const tomorrowDate = dayjs().add(4, 'day').$d.toISOString().substring(0, 10);
-        const lockResult = await controller.lockPass(testUsername, 1, tomorrowDate, '07-12');
-        assert.isTrue(lockResult, 'Expected to succeed locking the pass');
+        // eslint-disable-next-line no-unused-vars
+        const bookingDTO = await controller.bookPass(testUsername, 1, tomorrowDate, '07-12');
+        const bookedPassInfo = await controller.getBookedPass(testUsername);
+        assert.strictEqual(bookedPassInfo.statusCode, bookingStatusCodes.OK, 'Expected to succeed fetching booked pass');
     });
 });
